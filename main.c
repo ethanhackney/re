@@ -2,8 +2,105 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <pthread.h>
+#include <errno.h>
+#include <stdarg.h>
+#include <string.h>
+#include <limits.h>
 
-/* misc. constants */
+/* protects access to g_next_state */
+static pthread_mutex_t g_next_state_mut = PTHREAD_MUTEX_INITIALIZER;
+
+/* next available state (must be treated as a stack) */
+static int             g_next_state = 0;
+
+/**
+ * allocate a state:
+ *
+ * args:
+ *  none
+ *
+ * ret:
+ *  nothing
+ */
+void state_pop(void);
+
+/**
+ * free a state:
+ *
+ * args:
+ *  none
+ *
+ * ret:
+ *  nothing
+ */
+void state_push(void);
+
+/**
+ * lock state allocator:
+ *
+ * args:
+ *  none
+ *
+ * ret:
+ *  @success: nothing
+ *  @failure: die
+ *
+ * locks needed:
+ *  g_next_state_mut
+ */
+void state_lock(void);
+
+/**
+ * unlock state allocator:
+ *
+ * args:
+ *  none
+ *
+ * ret:
+ *  @success: nothing
+ *  @failure: die
+ *
+ * locks needed:
+ *  g_next_state_mut
+ */
+void state_unlock(void);
+
+/**
+ * state overflow check:
+ *
+ * args:
+ *  nonoe
+ *
+ * ret:
+ *  exit process if state overflow
+ */
+void state_overflow_check(void);
+
+/**
+ * state underflow check:
+ *
+ * args:
+ *  nonoe
+ *
+ * ret:
+ *  exit process if state overflow
+ */
+void state_underflow_check(void);
+
+/**
+ * die:
+ *
+ * args:
+ *  @fmt: format string
+ *  @...: args
+ *
+ * ret:
+ *  exit process
+ */
+void die(const char *fmt, ...);
+
+/* ptrlist constants */
 enum {
         PTRLIST_INIT_CAP = 32,
 };
@@ -96,9 +193,6 @@ struct nfa {
         int         n_type;     /* type */
         int         n_c;        /* if NFA_CHAR, character */
 };
-
-/* next available state */
-static int g_next_state = 0;
 
 /**
  * create a new nfa{}:
@@ -291,7 +385,7 @@ nfa_new(int type)
         }
 
         np->n_type = type;
-        g_next_state++;
+        state_push();
         return np;
 }
 
@@ -331,7 +425,7 @@ nfa_do_free(struct nfa *np, struct ptrlist **seen)
 
         free(np);
         np = NULL;
-        g_next_state--;
+        state_pop();
 }
 
 struct nfa *
@@ -713,4 +807,72 @@ ptrlist_hash(const void *ptr)
                 hash = ((hash << 5) - hash) * *p++;
 
         return hash;
+}
+
+void
+state_pop(void)
+{
+        state_lock();
+        state_overflow_check();
+        g_next_state++;
+        state_unlock();
+}
+
+void
+state_push(void)
+{
+        state_lock();
+        state_underflow_check();
+        g_next_state--;
+        state_unlock();
+}
+
+void
+state_lock(void)
+{
+        errno = pthread_mutex_lock(&g_next_state_mut);
+        if (errno)
+                die("state_lock: pthread_mutex_lock");
+}
+
+void
+state_unlock(void)
+{
+        errno = pthread_mutex_unlock(&g_next_state_mut);
+        if (errno)
+                die("state_lock: pthread_mutex_unlock");
+}
+
+void
+die(const char *fmt, ...)
+{
+        va_list args;
+        int error = 0;
+
+        error = errno;
+        va_start(args, fmt);
+        vfprintf(stderr, fmt, args);
+        va_end(args);
+        fprintf(stderr, ": %s\n", strerror(error));
+        exit(1);
+}
+
+void
+state_overflow_check(void)
+{
+        if (g_next_state < INT_MAX)
+                return;
+
+        errno = EOVERFLOW;
+        die("state_push: overflow");
+}
+
+void
+state_underflow_check(void)
+{
+        if (g_next_state > 0)
+                return;
+
+        errno = EOVERFLOW;
+        die("state_pop: underflow");
 }
