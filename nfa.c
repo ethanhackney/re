@@ -68,6 +68,8 @@ nfa_free(struct nfa **npp)
         ptrlist_for_each(seen, np, {
                 free(np);
         });
+
+        ptrlist_free(&seen);
 }
 
 static void
