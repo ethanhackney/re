@@ -3,7 +3,6 @@
 
 /* nfa types */
 enum {
-        NFA_MATCH, /* match nfa */
         NFA_CHAR,  /* regular character */
         NFA_OR,    /* or nfa */
         NFA_COUNT, /* type count */
@@ -51,18 +50,6 @@ void nfa_free(struct nfa **npp);
  *  @failure: die
  */
 struct nfa *nfa_char_new(int c);
-
-/**
- * create a new match nfa{}:
- *
- * args:
- *  none
- *
- * ret:
- *  @success: pointer to nfa{}
- *  @failure: die
- */
-struct nfa *nfa_match_new(void);
 
 /**
  * create a new or nfa{}:

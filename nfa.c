@@ -54,18 +54,6 @@ static void indent(int space);
 static void nfa_char_dump(struct nfa *np, struct ptrlist **seen, int space);
 
 /**
- * dump a NFA_MATCH:
- *
- * args:
- *  @np:   pointer to nfa{}
- *  @space: amount of indent
- *
- * ret:
- *  nothing
- */
-static void nfa_match_dump(struct nfa *np, struct ptrlist **seen, int space);
-
-/**
  * dump a NFA_OR:
  *
  * args:
@@ -98,6 +86,9 @@ nfa_free(struct nfa **npp)
 {
         struct ptrlist *seen = NULL;
         struct nfa *np = NULL;
+
+        if (!*npp)
+                return;
 
         nfa_collect(*npp, &seen);
 
@@ -134,12 +125,6 @@ nfa_char_new(int c)
 }
 
 struct nfa *
-nfa_match_new(void)
-{
-        return nfa_new(NFA_MATCH);
-}
-
-struct nfa *
 nfa_or_new(struct nfa *e1, struct nfa *e2)
 {
         struct nfa *np = NULL;
@@ -170,10 +155,12 @@ nfa_dump(struct nfa *np, int space)
 void nfa_do_dump(struct nfa *np, struct ptrlist **seen, int space)
 {
         static void (*dump[NFA_COUNT])(struct nfa *, struct ptrlist **, int) = {
-                [NFA_MATCH] = nfa_match_dump,
-                [NFA_CHAR]  = nfa_char_dump,
-                [NFA_OR]    = nfa_or_dump,
+                [NFA_CHAR] = nfa_char_dump,
+                [NFA_OR]   = nfa_or_dump,
         };
+
+        if (!np)
+                return;
 
         if (ptrlist_has(*seen, np))
                 return;
@@ -205,13 +192,6 @@ nfa_char_dump(struct nfa *np, struct ptrlist **seen, int space)
 
         indent(space + 2);
         printf("},\n");
-}
-
-static void
-nfa_match_dump(struct nfa *np, struct ptrlist **seen, int space)
-{
-        indent(space + 2);
-        printf("type: NFA_MATCH,\n");
 }
 
 static void

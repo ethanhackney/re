@@ -149,7 +149,7 @@ re_comp_or(const char **spp, struct nfa **startpp, struct nfa **endpp)
                  *    +->CHAR-+
                  */
                 or = nfa_or_new(left, start2);
-                end = nfa_match_new();
+                end = nfa_char_new(0);
                 left->n_edges[0] = end;
                 start2->n_edges[0] = end;
 
@@ -163,17 +163,11 @@ re_comp_or(const char **spp, struct nfa **startpp, struct nfa **endpp)
 static void
 re_comp_factor(const char **spp, struct nfa **startpp, struct nfa **endpp)
 {
-        struct nfa *start = NULL;
-        struct nfa *end = NULL;
-
         /**
          * CHAR->MATCH
          */
-        start = nfa_char_new(**spp);
-        end = nfa_match_new();
-        start->n_edges[0] = end;
-
-        *startpp = start;
-        *endpp = end;
+        *startpp = nfa_char_new(**spp);
+        *endpp = nfa_char_new(0);
+        (*startpp)->n_edges[0] = *endpp;
         (*spp)++;
 }
