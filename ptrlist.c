@@ -43,7 +43,7 @@ enum {
         size_t seen__ = 0;                                      \
         size_t bkt__ = 0;                                       \
                                                                 \
-        for (bkt__ = 0; seen__ < (list__)->pl_cap; bkt__++) {   \
+        for (bkt__ = 0; seen__ < (list__)->pl_len; bkt__++) {   \
                 cur__ = (list__)->pl_tab[bkt__];                \
                 while (cur__) {                                 \
                         p__ = cur__;                            \
@@ -70,7 +70,7 @@ enum {
         size_t seen__ = 0;                                      \
         size_t bkt__ = 0;                                       \
                                                                 \
-        for (bkt__ = 0; seen__ < (list__)->pl_cap; bkt__++) {   \
+        for (bkt__ = 0; seen__ < (list__)->pl_len; bkt__++) {   \
                 cur__ = (list__)->pl_tab[bkt__];                \
                 while (cur__) {                                 \
                         next__ = cur__->p_next;                 \
@@ -131,6 +131,7 @@ ptrlist_add(struct ptrlist **list, void *ptr)
                         perror("ptrlist_add: calloc");
                         exit(1);
                 }
+                (*list)->pl_cap = PTRLIST_INIT_CAP;
         }
         ls = *list;
 
