@@ -23,7 +23,7 @@ static int g_next_state = 0;
  * ret:
  *  nothing
  */
-void state_pop(void);
+void state_push(void);
 
 /**
  * free a state:
@@ -34,10 +34,10 @@ void state_pop(void);
  * ret:
  *  nothing
  */
-void state_push(void);
+void state_pop(void);
 
 /**
- * lock state allocator:
+ * lock g_next_state:
  *
  * args:
  *  none
@@ -45,14 +45,11 @@ void state_push(void);
  * ret:
  *  @success: nothing
  *  @failure: die
- *
- * locks needed:
- *  g_next_state_mut
  */
 void state_lock(void);
 
 /**
- * unlock state allocator:
+ * unlock g_next_state:
  *
  * args:
  *  none
@@ -815,7 +812,7 @@ ptrlist_hash(const void *ptr)
 }
 
 void
-state_pop(void)
+state_push(void)
 {
         state_lock();
         state_overflow_check();
@@ -824,7 +821,7 @@ state_pop(void)
 }
 
 void
-state_push(void)
+state_pop(void)
 {
         state_lock();
         state_underflow_check();
