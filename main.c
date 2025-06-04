@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 /* misc. constants */
 enum {
@@ -132,9 +133,6 @@ void nfa_free(struct nfa **npp);
  *
  * ret:
  *  nothing
- *
- * NOTE:
- *  uses very bad search algorithm
  */
 void nfa_do_free(struct nfa *np, struct ptrlist **seen);
 
@@ -250,9 +248,6 @@ void nfa_dump(struct nfa *np, int space);
  *
  * ret:
  *  nothing
- *
- * NOTE:
- *  uses very bad search algorithm
  */
 void nfa_do_dump(struct nfa *np, struct ptrlist **seen, int space);
 
@@ -704,13 +699,13 @@ ptrlist_grow(struct ptrlist **head)
 size_t
 ptrlist_hash(const void *ptr)
 {
-        const unsigned char *p = NULL;
+        const uint8_t *p = NULL;
         size_t nptr = 0;
         size_t hash = 0;
         size_t n = 0;
 
         nptr = (size_t)(ptr);
-        p = (const unsigned char *)&nptr;
+        p = (const uint8_t *)&nptr;
         n = sizeof(ptr);
         hash = 0;
 
