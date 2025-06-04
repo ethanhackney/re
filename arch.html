@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>re Architecture</title>
+  </head>
+
+  <body>
+    <h2>re Architecture</h2>
+
+    <div class="mermaid">
+      flowchart LR
+        A[comp]
+        B[nfa]
+        C[state]
+        D[ptrlist]
+
+        A --> B
+        B --> C
+        B --> D
+    </div>
+
+    <!-- import mermaidjs -->
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+      mermaid.initialize({
+        startOnLoad: true
+      });
+    </script>
+
+  </body>
+
+</html>
