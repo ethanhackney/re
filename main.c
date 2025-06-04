@@ -74,6 +74,9 @@ void state_unlock(void);
  *
  * ret:
  *  exit process if state overflow
+ *
+ * locks needed:
+ *  g_next_state_mut
  */
 void state_overflow_check(void);
 
@@ -85,6 +88,9 @@ void state_overflow_check(void);
  *
  * ret:
  *  exit process if state overflow
+ *
+ * locks needed:
+ *  g_next_state_mut
  */
 void state_underflow_check(void);
 
@@ -229,7 +235,6 @@ void nfa_free(struct nfa **npp);
  *  nothing
  */
 void nfa_do_free(struct nfa *np, struct ptrlist **seen);
-
 
 /**
  * create a new char nfa{}:
