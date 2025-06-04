@@ -31,32 +31,6 @@ enum {
         for (p__ = ptrlist_at(list__, hash__); p__; p__ = p__->p_next)
 
 /**
- * iterate through ptrlist:
- *
- * args:
- *  @list__:      pointer to ptrlist
- *  @p__:         place to store ptr 
- *  @codeblock__: code to run for each ptr
- */
-#define ptrlist_for_each(list__, p__, codeblock__) do {         \
-        struct ptr *cur__ = NULL;                               \
-        size_t seen__ = 0;                                      \
-        size_t bkt__ = 0;                                       \
-                                                                \
-        for (bkt__ = 0; seen__ < (list__)->pl_len; bkt__++) {   \
-                cur__ = (list__)->pl_tab[bkt__];                \
-                while (cur__) {                                 \
-                        p__ = cur__;                            \
-                        {                                       \
-                                codeblock__                     \
-                        }                                       \
-                        cur__ = (cur__)->p_next;                \
-                        seen__++;                               \
-                }                                               \
-        }                                                       \
-} while (0)
-
-/**
  * iterate through ptrlist safely:
  *
  * args:
@@ -83,13 +57,6 @@ enum {
                 }                                               \
         }                                                       \
 } while (0)
-
-/* ptrlist entry */
-struct ptr {
-        struct ptr *p_next; /* next on hash chain */
-        size_t      p_hash; /* saved hash */
-        void       *p_ptr;  /* pointer */
-};
 
 /**
  * hash function:

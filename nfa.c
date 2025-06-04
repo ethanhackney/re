@@ -15,7 +15,7 @@
  * ret:
  *  nothing
  */
-static void nfa_do_free(struct nfa *np, struct ptrlist **seen);
+static void nfa_collect(struct nfa *np, struct ptrlist **seen);
 
 /**
  * do dump nfa{}:
@@ -61,39 +61,27 @@ void
 nfa_free(struct nfa **npp)
 {
         struct ptrlist *seen = NULL;
+        struct nfa *np = NULL;
 
-        nfa_do_free(*npp, &seen);
-        *npp = NULL;
+        nfa_collect(*npp, &seen);
 
-        ptrlist_free(&seen);
+        ptrlist_for_each(seen, np, {
+                free(np);
+        });
 }
 
 static void
-nfa_do_free(struct nfa *np, struct ptrlist **seen)
+nfa_collect(struct nfa *np, struct ptrlist **seen)
 {
+        if (!np)
+                return;
+
         if (ptrlist_has(*seen, np))
                 return;
 
         ptrlist_add(seen, np);
-
-        switch (np->n_type) {
-        case NFA_MATCH:
-                break;
-        case NFA_CHAR:
-                nfa_do_free(np->n_edges[0], seen);
-                break;
-        case NFA_OR:
-                nfa_do_free(np->n_edges[0], seen);
-                nfa_do_free(np->n_edges[1], seen);
-                break;
-        default:
-                fprintf(stderr, "nfa_do_free: bad nfa type: %d\n", np->n_type);
-                exit(1);
-        }
-
-        free(np);
-        np = NULL;
-        state_pop();
+        nfa_collect(np->n_edges[0], seen);
+        nfa_collect(np->n_edges[1], seen);
 }
 
 struct nfa *
