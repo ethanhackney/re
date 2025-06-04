@@ -19,7 +19,7 @@ CFLAGS = -Wall  		\
 	-pedantic
 FFLAGS  = $(CFLAGS) -O3
 DFLAGS  = $(CFLAGS) -fsanitize=address,undefined
-SRC     = main.c util.c state.c ptrlist.c
+SRC     = main.c util.c state.c ptrlist.c nfa.c
 CC      = gcc
 
 safe:
