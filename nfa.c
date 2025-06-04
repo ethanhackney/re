@@ -1,6 +1,5 @@
 #include "nfa.h"
 #include "ptrlist.h"
-#include "state.h"
 #include "util.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -77,7 +76,6 @@ nfa_new(int type)
         }
 
         np->n_type = type;
-        state_push();
         return np;
 }
 

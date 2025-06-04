@@ -3,39 +3,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include <limits.h>
-
-/* protects access to g_next_state */
-static pthread_mutex_t g_next_state_mut = PTHREAD_MUTEX_INITIALIZER;
-
-/* next available state (must be treated as a stack) */
-static int g_next_state = 0;
-
-/**
- * lock g_next_state:
- *
- * args:
- *  none
- *
- * ret:
- *  @success: nothing
- *  @failure: die
- */
-static void state_lock(void);
-
-/**
- * unlock g_next_state:
- *
- * args:
- *  none
- *
- * ret:
- *  @success: nothing
- *  @failure: die
- *
- * locks needed:
- *  g_next_state_mut
- */
-static void state_unlock(void);
+#include <stddef.h>
 
 /**
  * state overflow check:
@@ -45,11 +13,8 @@ static void state_unlock(void);
  *
  * ret:
  *  exit process if state overflow
- *
- * locks needed:
- *  g_next_state_mut
  */
-static void state_overflow_check(void);
+static void state_stack_overflow_check(state_stack_t *sp);
 
 /**
  * state underflow check:
@@ -59,50 +24,48 @@ static void state_overflow_check(void);
  *
  * ret:
  *  exit process if state overflow
- *
- * locks needed:
- *  g_next_state_mut
  */
-static void state_underflow_check(void);
+static void state_stack_underflow_check(state_stack_t *sp);
 
 void
-state_push(void)
+state_stack_init(state_stack_t *sp)
 {
-        state_lock();
-        state_overflow_check();
-        g_next_state++;
-        state_unlock();
+        *sp = 0;
+}
+
+/**
+ * free state_stack_t{}:
+ *
+ * args:
+ *  @sp: pointer to state_stack_t{}
+ *
+ * ret:
+ *  nothing
+ */
+void
+state_stack_free(state_stack_t *sp)
+{
+        state_stack_init(sp);
 }
 
 void
-state_pop(void)
+state_stack_push(state_stack_t *sp)
 {
-        state_lock();
-        state_underflow_check();
-        g_next_state--;
-        state_unlock();
+        state_stack_underflow_check(sp);
+        (*sp)--;
+}
+
+void
+state_stack_pop(state_stack_t *sp)
+{
+        state_stack_overflow_check(sp);
+        (*sp)++;
 }
 
 static void
-state_lock(void)
+state_stack_overflow_check(state_stack_t *sp)
 {
-        errno = pthread_mutex_lock(&g_next_state_mut);
-        if (errno)
-                die("state_lock: pthread_mutex_lock");
-}
-
-static void
-state_unlock(void)
-{
-        errno = pthread_mutex_unlock(&g_next_state_mut);
-        if (errno)
-                die("state_lock: pthread_mutex_unlock");
-}
-
-static void
-state_overflow_check(void)
-{
-        if (g_next_state < INT_MAX)
+        if ((size_t)(*sp + 1))
                 return;
 
         errno = EOVERFLOW;
@@ -110,11 +73,17 @@ state_overflow_check(void)
 }
 
 static void
-state_underflow_check(void)
+state_stack_underflow_check(state_stack_t *sp)
 {
-        if (g_next_state > 0)
+        if (*sp > 0)
                 return;
 
         errno = EOVERFLOW;
         die("state_pop: underflow");
+}
+
+int
+state_stack_len(const state_stack_t *sp)
+{
+        return *sp;
 }
