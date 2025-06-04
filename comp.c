@@ -2,18 +2,23 @@
 #include "nfa.h"
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
 /**
  * do regex compilation:
  *
  * args:
- *  @re: regex
+ *  @spp:     pointer to pointer to string
+ *  @startpp: pointer to pointer to start nfa{}
+ *  @endpp:   pointer to pointer to end nfa{}
  *
  * ret:
  *  @success: pointer to nfa{}
  *  @failure: die
  */
-static struct nfa *re_do_comp(const char **spp);
+static void re_do_comp(const char **spp,
+                       struct nfa **startpp,
+                       struct nfa **endpp);
 
 /**
  * compile or expression:
@@ -50,11 +55,16 @@ static void re_comp_factor(const char **spp,
 struct nfa *
 re_comp(const char *re)
 {
-        return re_do_comp(&re);
+        struct nfa *start = NULL;
+        struct nfa *end = NULL;
+
+        re_do_comp(&re, &start, &end);
+
+        return start;
 }
 
-static struct nfa *
-re_do_comp(const char **spp)
+static void
+re_do_comp(const char **spp, struct nfa **startpp, struct nfa **endpp)
 {
         struct nfa *start2 = NULL;
         struct nfa *end2 = NULL;
@@ -63,47 +73,48 @@ re_do_comp(const char **spp)
         struct nfa *cur = NULL;
 
         /**
-         *    +->CHAR-+
+         *    +->EXPR-+
          *    |       |
          * OR-+       +->MATCH
          *    |       |
-         *    +->CHAR-+
+         *    +->EXPR-+
          */
         re_comp_or(spp, &start, &end);
 
         cur = start;
         while (**spp) {
                 /**
-                 *    +->CHAR-+
+                 *    +->EXPR-+
                  *    |       |
                  * OR-+       +->MATCH
                  *    |       |
-                 *    +->CHAR-+
+                 *    +->EXPR-+
                  */
                 re_comp_or(spp, &start2, &end2);
 
                 /**
-                 *    +->CHAR-+
+                 *    +->EXPR-+
                  *    |       |
                  * OR-+       +-x
                  *    |       |
-                 *    +->CHAR-+
+                 *    +->EXPR-+
                  */
                 nfa_free(&end);
 
                 /**
-                 *    +->CHAR-+     +->CHAR-+
-                 *    |       |     |       |
-                 * OR-+       +->OR-+       +->MATCH
-                 *    |       |     |       |
-                 *    +->CHAR-+     +->CHAR-+
+                 *    +->EXPR-+
+                 *    |       |
+                 * OR-+       +>MATCH
+                 *    |       |
+                 *    +->EXPR-+
                  */
                 cur->n_edges[0] = start2;
                 cur = start2;
                 end = end2;
         }
 
-        return start;
+        *startpp = start;
+        *endpp = end;
 }
 
 
@@ -142,11 +153,11 @@ re_comp_or(const char **spp, struct nfa **startpp, struct nfa **endpp)
                 nfa_free(&end2);
 
                 /**
-                 *    +->CHAR-+
+                 *    +->EXPR-+
                  *    |       |
                  * OR-+       +->MATCH
                  *    |       |
-                 *    +->CHAR-+
+                 *    +->EXPR-+
                  */
                 or = nfa_or_new(left, start2);
                 end = nfa_char_new(0);
