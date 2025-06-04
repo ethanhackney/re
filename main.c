@@ -12,7 +12,7 @@
 static pthread_mutex_t g_next_state_mut = PTHREAD_MUTEX_INITIALIZER;
 
 /* next available state (must be treated as a stack) */
-static int             g_next_state = 0;
+static int g_next_state = 0;
 
 /**
  * allocate a state:
