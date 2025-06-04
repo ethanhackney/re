@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "util.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -90,18 +91,6 @@ void state_overflow_check(void);
  *  g_next_state_mut
  */
 void state_underflow_check(void);
-
-/**
- * die:
- *
- * args:
- *  @fmt: format string
- *  @...: args
- *
- * ret:
- *  exit process
- */
-void die(const char *fmt, ...);
 
 /**
  * key into ptrlist:
@@ -907,20 +896,6 @@ state_unlock(void)
         errno = pthread_mutex_unlock(&g_next_state_mut);
         if (errno)
                 die("state_lock: pthread_mutex_unlock");
-}
-
-void
-die(const char *fmt, ...)
-{
-        va_list args;
-        int error = 0;
-
-        error = errno;
-        va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
-        va_end(args);
-        fprintf(stderr, ": %s\n", strerror(error));
-        exit(1);
 }
 
 void
