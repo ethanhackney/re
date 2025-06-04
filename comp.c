@@ -1,6 +1,7 @@
 #include "comp.h"
 #include "nfa.h"
 #include <stddef.h>
+#include <stdio.h>
 
 /**
  * do regex compilation:
@@ -149,7 +150,7 @@ re_comp_or(const char **spp, struct nfa **startpp, struct nfa **endpp)
                  */
                 or = nfa_or_new(left, start2);
                 end = nfa_match_new();
-                start1->n_edges[0] = end;
+                left->n_edges[0] = end;
                 start2->n_edges[0] = end;
 
                 left = or;

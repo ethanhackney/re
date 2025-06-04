@@ -14,7 +14,7 @@ main(void)
          *          |       |
          *          +->CHAR-+
          */
-        np = re_comp("ab|c|d");
+        np = re_comp("ab|c");
         nfa_dump(np, 0);
         nfa_free(&np);
 }

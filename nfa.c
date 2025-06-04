@@ -41,6 +41,42 @@ static void nfa_do_dump(struct nfa *np, struct ptrlist **seen, int space);
  */
 static void indent(int space);
 
+/**
+ * dump a NFA_CHAR:
+ *
+ * args:
+ *  @np:   pointer to nfa{}
+ *  @space: amount of indent
+ *
+ * ret:
+ *  nothing
+ */
+static void nfa_char_dump(struct nfa *np, struct ptrlist **seen, int space);
+
+/**
+ * dump a NFA_MATCH:
+ *
+ * args:
+ *  @np:   pointer to nfa{}
+ *  @space: amount of indent
+ *
+ * ret:
+ *  nothing
+ */
+static void nfa_match_dump(struct nfa *np, struct ptrlist **seen, int space);
+
+/**
+ * dump a NFA_OR:
+ *
+ * args:
+ *  @np:   pointer to nfa{}
+ *  @space: amount of indent
+ *
+ * ret:
+ *  nothing
+ */
+static void nfa_or_dump(struct nfa *np, struct ptrlist **seen, int space);
+
 struct nfa *
 nfa_new(int type)
 {
@@ -133,55 +169,17 @@ nfa_dump(struct nfa *np, int space)
 
 void nfa_do_dump(struct nfa *np, struct ptrlist **seen, int space)
 {
+        static void (*dump[NFA_COUNT])(struct nfa *, struct ptrlist **, int) = {
+                [NFA_MATCH] = nfa_match_dump,
+                [NFA_CHAR]  = nfa_char_dump,
+                [NFA_OR]    = nfa_or_dump,
+        };
+
         if (ptrlist_has(*seen, np))
                 return;
 
         ptrlist_add(seen, np);
-
-        switch (np->n_type) {
-        case NFA_CHAR:
-                indent(space + 2);
-                printf("type: NFA_CHAR,\n");
-
-                indent(space + 2);
-                printf("c: '%c',\n", np->n_c);
-
-                indent(space + 2);
-                printf("e1: {\n");
-
-                nfa_do_dump(np->n_edges[0], seen, space + 4);
-
-                indent(space + 2);
-                printf("},\n");
-                break;
-        case NFA_OR:
-                indent(space + 2);
-                printf("type: NFA_OR,\n");
-
-                indent(space + 2);
-                printf("e1: {\n");
-
-                nfa_do_dump(np->n_edges[0], seen, space + 4);
-
-                indent(space + 2);
-                printf("},\n");
-
-                indent(space + 2);
-                printf("e2: {\n");
-
-                nfa_do_dump(np->n_edges[1], seen, space + 4);
-
-                indent(space + 2);
-                printf("},\n");
-                break;
-        case NFA_MATCH:
-                indent(space + 2);
-                printf("type: NFA_MATCH,\n");
-                break;
-        default:
-                fprintf(stderr, "nfa_do_dump: bad nfa type: %d\n", np->n_type);
-                exit(1);
-        }
+        dump[np->n_type](np, seen, space);
 }
 
 void
@@ -189,4 +187,52 @@ indent(int space)
 {
         while (--space >= 0)
                 putchar(' ');
+}
+
+static void
+nfa_char_dump(struct nfa *np, struct ptrlist **seen, int space)
+{
+        indent(space + 2);
+        printf("type: NFA_CHAR,\n");
+
+        indent(space + 2);
+        printf("c: '%c',\n", np->n_c);
+
+        indent(space + 2);
+        printf("e1: {\n");
+
+        nfa_do_dump(np->n_edges[0], seen, space + 4);
+
+        indent(space + 2);
+        printf("},\n");
+}
+
+static void
+nfa_match_dump(struct nfa *np, struct ptrlist **seen, int space)
+{
+        indent(space + 2);
+        printf("type: NFA_MATCH,\n");
+}
+
+static void
+nfa_or_dump(struct nfa *np, struct ptrlist **seen, int space)
+{
+        indent(space + 2);
+        printf("type: NFA_OR,\n");
+
+        indent(space + 2);
+        printf("e1: {\n");
+
+        nfa_do_dump(np->n_edges[0], seen, space + 4);
+
+        indent(space + 2);
+        printf("},\n");
+
+        indent(space + 2);
+        printf("e2: {\n");
+
+        nfa_do_dump(np->n_edges[1], seen, space + 4);
+
+        indent(space + 2);
+        printf("},\n");
 }
