@@ -103,6 +103,81 @@ void state_underflow_check(void);
  */
 void die(const char *fmt, ...);
 
+/**
+ * key into ptrlist:
+ *
+ * args:
+ *  @list__: pointer to ptrlist{}
+ *  @hash__: hash
+ */
+#define ptrlist_at(list__, hash__) \
+        ((list__)->pl_tab[(hash__) & ((list__)->pl_cap - 1)])
+
+/**
+ * iterate through ptr{} chain:
+ *
+ * args:
+ *  @list__: pointer to ptrlist{}
+ *  @hash__: hash
+ *  @p__:    place to store struct ptr
+ */
+#define ptr_for_each(list__, hash__, p__) \
+        for (p__ = ptrlist_at(list__, hash__); p__; p__ = p__->p_next)
+
+/**
+ * iterate through ptrlist:
+ *
+ * args:
+ *  @list__:      pointer to ptrlist
+ *  @p__:         place to store ptr 
+ *  @codeblock__: code to run for each ptr
+ */
+#define ptrlist_for_each(list__, p__, codeblock__) do {         \
+        struct ptr *cur__ = NULL;                               \
+        size_t seen__ = 0;                                      \
+        size_t bkt__ = 0;                                       \
+                                                                \
+        for (bkt__ = 0; seen__ < (list__)->pl_cap; bkt__++) {   \
+                cur__ = (list__)->pl_tab[bkt__];                \
+                while (cur__) {                                 \
+                        p__ = cur__;                            \
+                        {                                       \
+                                codeblock__                     \
+                        }                                       \
+                        cur__ = (cur__)->p_next;                \
+                        seen__++;                               \
+                }                                               \
+        }                                                       \
+} while (0)
+
+/**
+ * iterate through ptrlist safely:
+ *
+ * args:
+ *  @list__:      pointer to ptrlist
+ *  @p__:         place to store struct ptr 
+ *  @codeblock__: code to run for each ptr
+ */
+#define ptrlist_for_each_safe(list__, p__, codeblock__) do {    \
+        struct ptr *next__ = NULL;                              \
+        struct ptr *cur__ = NULL;                               \
+        size_t seen__ = 0;                                      \
+        size_t bkt__ = 0;                                       \
+                                                                \
+        for (bkt__ = 0; seen__ < (list__)->pl_cap; bkt__++) {   \
+                cur__ = (list__)->pl_tab[bkt__];                \
+                while (cur__) {                                 \
+                        next__ = cur__->p_next;                 \
+                        p__ = cur__;                            \
+                        {                                       \
+                                codeblock__                     \
+                        }                                       \
+                        cur__ = next__;                         \
+                        seen__++;                               \
+                }                                               \
+        }                                                       \
+} while (0)
+
 /* ptrlist constants */
 enum {
         PTRLIST_INIT_CAP = 32,
@@ -134,61 +209,75 @@ struct ptrlist {
  * add pointer to start of list:
  *
  * args:
- *  @head: head of list
+ *  @list: pointer to ptrlist{}
  *  @ptr:  pointer
  *
  * ret:
  *  @success: nothing
  *  @failure: die
  */
-void ptrlist_add(struct ptrlist **head, void *ptr);
+void ptrlist_add(struct ptrlist **list, void *ptr);
 
 /**
  * hash function:
  *
  * args:
+ *  @list: pointer to ptrlist{}
  *  @ptr: pointer
  *
  * ret:
  *  hash of pointer
  */
-size_t ptrlist_hash(const void *ptr);
+size_t ptrlist_hash(const struct ptrlist *list, const void *ptr);
 
 /**
  * grow ptrlist{}:
  *
  * args:
- *  @head: head of list
+ *  @list: pointer to ptrlist{}
  *
  * ret:
  *  @success: nothing
  *  @failure: die
  */
-void ptrlist_grow(struct ptrlist **head);
+void ptrlist_grow(struct ptrlist **list);
 
 /**
  * free ptrlist:
  *
  * args:
- *  @head: head of list
+ *  @list: pointer to pointer ptrlist{}
  *
  * ret:
- *  nothing
+ *  *list set to NULL
  */
-void ptrlist_free(struct ptrlist **head);
+void ptrlist_free(struct ptrlist **list);
 
 /**
  * search ptrlist{}:
  *
  * args:
- *  @head: head of list
+ *  @list: pointer ptrlist{}
  *  @ptr:  pointer to search for
  *
  * ret:
  *  @true:  if ptr in list
  *  @false: if not
  */
-bool ptrlist_has(const struct ptrlist *head, void *ptr);
+bool ptrlist_has(const struct ptrlist *list, void *ptr);
+
+/**
+ * do search ptrlist{}:
+ *
+ * args:
+ *  @list: pointer ptrlist{}
+ *  @ptr:  pointer to search for
+ *
+ * ret:
+ *  @true:  if ptr in list
+ *  @false: if not
+ */
+void *ptrlist_get(const struct ptrlist *list, void *ptr);
 
 /* nfa */
 struct nfa {
@@ -666,35 +755,33 @@ indent(int space)
 }
 
 void
-ptrlist_add(struct ptrlist **head, void *ptr)
+ptrlist_add(struct ptrlist **list, void *ptr)
 {
-        struct ptrlist *list = NULL;
+        struct ptrlist *ls = NULL;
         struct ptr *p = NULL;
         size_t initsize = 0;
         size_t hash = 0;
         size_t bkt = 0;
 
         initsize = sizeof(*list) + (sizeof(struct ptr) * PTRLIST_INIT_CAP);
-        list = *head;
-        if (!list) {
-                list = calloc(1, initsize);
-                if (!list) {
+        if (!*list) {
+                *list = calloc(1, initsize);
+                if (!*list) {
                         perror("ptrlist_add: calloc");
                         exit(1);
                 }
-                list->pl_cap = PTRLIST_INIT_CAP;
         }
+        ls = *list;
 
-        hash = ptrlist_hash(ptr);
-        bkt = hash & (list->pl_cap - 1);
-        for (p = list->pl_tab[bkt]; p; p = p->p_next) {
+        hash = ptrlist_hash(ls, ptr);
+        ptr_for_each(ls, hash, p) {
                 if (p->p_ptr == ptr)
                         return;
         }
 
-        if (list->pl_len == list->pl_cap) {
-                ptrlist_grow(&list);
-                bkt = hash & (list->pl_cap - 1);
+        if (ls->pl_len == ls->pl_cap) {
+                ptrlist_grow(&ls);
+                bkt = hash & (ls->pl_cap - 1);
         }
 
         p = calloc(1, sizeof(*p));
@@ -705,48 +792,34 @@ ptrlist_add(struct ptrlist **head, void *ptr)
 
         p->p_hash = hash;
         p->p_ptr = ptr;
-        p->p_next = list->pl_tab[bkt];
-        list->pl_tab[bkt] = p;
-        list->pl_len++;
-        *head = list;
+        p->p_next = ls->pl_tab[bkt];
+        ls->pl_tab[bkt] = p;
+        ls->pl_len++;
+        *list = ls;
 }
 
 void
-ptrlist_free(struct ptrlist **head)
+ptrlist_free(struct ptrlist **list)
 {
-        struct ptrlist *list = NULL;
-        struct ptr *next = NULL;
         struct ptr *p = NULL;
-        size_t seen = 0;
-        size_t bkt = 0;
 
-        list = *head;
-        for (bkt = 0; seen < list->pl_len; bkt++) {
-                for (p = list->pl_tab[bkt]; p; p = next) {
-                        next = p->p_next;
-                        free(p);
-                        p = NULL;
-                        seen++;
-                }
-        }
+        ptrlist_for_each_safe(*list, p, {
+                free(p);
+        });
 
-        free(list);
-        *head = NULL;
+        free(*list);
+        *list = NULL;
 }
 
 bool
-ptrlist_has(const struct ptrlist *head, void *ptr)
+ptrlist_has(const struct ptrlist *list, void *ptr)
 {
         struct ptr *p = NULL;
-        size_t hash = 0;
-        size_t bkt = 0;
 
-        if (!head)
+        if (!list)
                 return false;
 
-        hash = ptrlist_hash(ptr);
-        bkt = hash & (head->pl_cap - 1);
-        for (p = head->pl_tab[bkt]; p; p = p->p_next) {
+        ptr_for_each(list, ptrlist_hash(list, ptr), p) {
                 if (p->p_ptr == ptr)
                         return true;
         }
@@ -755,18 +828,15 @@ ptrlist_has(const struct ptrlist *head, void *ptr)
 }
 
 void
-ptrlist_grow(struct ptrlist **head)
+ptrlist_grow(struct ptrlist **list)
 {
         struct ptrlist *cur = NULL;
         struct ptrlist *new = NULL;
-        struct ptr *next = NULL;
         struct ptr *p = NULL;
         size_t newbkt = 0;
-        size_t seen = 0;
         size_t cap = 0;
-        size_t bkt = 0;
 
-        cur = *head;
+        cur = *list;
         cap = cur->pl_cap << 1;
         new = calloc(1, sizeof(*new) + (sizeof(struct ptr) * cap));
         if (!new) {
@@ -776,24 +846,18 @@ ptrlist_grow(struct ptrlist **head)
         new->pl_cap = cap;
         new->pl_len = cur->pl_len;
 
-        cur = *head;
-        seen = 0;
-        for (bkt = 0; seen < cur->pl_len; bkt++) {
-                for (p = cur->pl_tab[bkt]; p; p = next) {
-                        next = p->p_next;
-                        newbkt = p->p_hash & (cap - 1);
-                        p->p_next = new->pl_tab[newbkt];
-                        new->pl_tab[newbkt] = p;
-                        seen++;
-                }
-        }
+        ptrlist_for_each_safe(cur, p, {
+                newbkt = p->p_hash & (cap - 1);
+                p->p_next = new->pl_tab[newbkt];
+                new->pl_tab[newbkt] = p;
+        });
 
         free(cur);
-        *head = new;
+        *list = new;
 }
 
 size_t
-ptrlist_hash(const void *ptr)
+ptrlist_hash(const struct ptrlist *list, const void *ptr)
 {
         const uint8_t *p = NULL;
         size_t nptr = 0;
@@ -808,7 +872,7 @@ ptrlist_hash(const void *ptr)
         while (n-- > 0)
                 hash = ((hash << 5) - hash) * *p++;
 
-        return hash;
+        return hash & (list->pl_cap - 1);
 }
 
 void
