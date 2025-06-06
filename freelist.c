@@ -66,10 +66,15 @@ freelist_new(void)
 void
 freelist_free(struct freelist **fpp)
 {
-        struct freelist *fp = *fpp;
+        struct freelist *fp = NULL;
         struct freelink *next = NULL;
         struct freelink *p = NULL;
         size_t i = 0;
+
+        ASSERT(fpp != NULL);
+
+        fp = *fpp;
+        ASSERT(fp != NULL);
 
         errno = pthread_mutex_destroy(&fp->f_mut);
         if (errno != 0)
@@ -93,6 +98,9 @@ freelist_get(struct freelist *fp, size_t size)
         size_t bucket = log2_pow2(actual);
         struct freelink *p = NULL;
 
+        ASSERT(fp != NULL);
+        ASSERT(size != 0);
+
         freelist_lock(fp);
 
         if (p != NULL) {
@@ -114,6 +122,8 @@ done:
 static void
 freelist_lock(struct freelist *fp)
 {
+        ASSERT(fp != NULL);
+
         errno = pthread_mutex_lock(&fp->f_mut);
         if (errno != 0)
                 die("freelist_lock: pthread_mutex_lock");
@@ -122,6 +132,8 @@ freelist_lock(struct freelist *fp)
 static void
 freelist_unlock(struct freelist *fp)
 {
+        ASSERT(fp != NULL);
+
         errno = pthread_mutex_unlock(&fp->f_mut);
         if (errno != 0)
                 die("freelist_unlock: pthread_mutex_unlock");
@@ -132,6 +144,10 @@ freelist_put(struct freelist *fp, void **pp)
 {
         struct freelink *p = ((struct freelink *)*pp) - 1;
         size_t bucket = 0;
+
+        ASSERT(fp != NULL);
+        ASSERT(pp != NULL);
+        ASSERT(*pp != NULL);
 
         freelist_lock(fp);
 

@@ -18,7 +18,7 @@ CFLAGS = -Wall  		\
 	-Wno-unused-parameter   \
 	-pedantic
 FFLAGS  = $(CFLAGS) -O3
-DFLAGS  = $(CFLAGS) -fsanitize=address,undefined
+DFLAGS  = $(CFLAGS) -DDEBUG -fsanitize=address,undefined
 SRC     = $(wildcard *.c)
 CC      = gcc
 

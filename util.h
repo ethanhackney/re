@@ -3,6 +3,14 @@
 
 #include <stddef.h>
 
+/* if debugging */
+#ifdef DEBUG
+#include <assert.h>
+#define ASSERT(_cond) assert(_cond)
+#else
+#define ASSERT(_cond)
+#endif /* #ifdef DEBUG */
+
 /**
  * mark condition as unlikely:
  *
