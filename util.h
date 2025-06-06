@@ -2,6 +2,9 @@
 #define UTIL_H
 
 #include <stddef.h>
+#include <stdlib.h>
+#include <stdatomic.h>
+#include <stdbool.h>
 
 /* if debugging */
 #ifdef DEBUG
@@ -10,6 +13,40 @@
 #else
 #define ASSERT(_cond)
 #endif /* #ifdef DEBUG */
+
+/**
+ * do something once:
+ *
+ * args:
+ *  @_flag:  pointer to _Atomic bool
+ *  @_block: code block to run
+ *
+ * ret:
+ *  @success: nothing
+ *  @failure: does not
+ */
+#define ONCE(_flag, _block) do {                                                \
+        bool _expect = false;                                                   \
+                                                                                \
+        if (unlikely(atomic_compare_exchange_strong(_flag, &_expect, true)))    \
+                _block                                                          \
+} while (0)
+
+/**
+ * free memory and set to NULL:
+ *
+ * args:
+ *  @_pp: pointer to pointer
+ *
+ * ret:
+ *  @success: nothing
+ *  @failure: does not
+ */
+#define FREE_AND_NULL(_pp) do { \
+        ASSERT((_pp) != NULL);  \
+        free(*(_pp));           \
+        *(_pp) = NULL;          \
+} while (0)
 
 /**
  * mark condition as unlikely:

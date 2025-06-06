@@ -1,7 +1,7 @@
 #include "freelist.h"
 #include "util.h"
+#include "mutex.h"
 #include <errno.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,76 +19,110 @@ struct freelink {
 
 /* freelist{} */
 struct freelist {
+        struct freelist *f_next;                        /* next on list */
         struct freelink *f_free[FREELIST_BUCKET_COUNT]; /* free lists */
-        pthread_mutex_t  f_mut;                         /* protect access */
+        mutex_t          f_mut;                         /* protect access */
         size_t           f_nbytes;                      /* bytes allocated */
 };
 
-/**
- * lock freelist:
- *
- * args:
- *  @fp: pointer to freelist{}
- *
- * ret:
- *  @success: nothing
- *  @failure: die
- */
-static void freelist_lock(struct freelist *fp);
+static struct freelist *g_all;                  /* list of all freelist{} */
+static mutex_t          g_all_mut = MUTEX_INIT; /* protext access to g_all */
 
 /**
- * unlock freelist:
+ * cleanup function to free g_all:
+ *
+ * args:
+ *  none
+ *
+ * ret:
+ *  @success: nothing
+ *  @failure: does not
+ */
+static void freelist_cleanup(void);
+
+/**
+ * free freelist{} buckets:
  *
  * args:
  *  @fp: pointer to freelist{}
  *
  * ret:
  *  @success: nothing
- *  @failure: die
+ *  @failure: does not
+ *
+ * NOTE:
+ *  must be called with fp->f_mut held
  */
-static void freelist_unlock(struct freelist *fp);
+static void freelist_free_buckets(struct freelist *fp);
 
 struct freelist *
 freelist_new(void)
 {
+        static _Atomic bool init = ATOMIC_FLAG_INIT;
         struct freelist *fp = calloc(1, sizeof(*fp));
+
+        ONCE(&init, {
+                if (atexit(freelist_cleanup) < 0)
+                        die("freelist_new: atexit");
+        });
 
         if (fp == NULL)
                 die("freelist_new: calloc");
 
-        errno = pthread_mutex_init(&fp->f_mut, NULL);
-        if (errno != 0)
-                die("freelist_new: pthread_mutex_init");
+        mutex_init(&fp->f_mut);
+
+        mutex_lock(&g_all_mut);
+        fp->f_next = g_all;
+        g_all = fp;
+        mutex_unlock(&g_all_mut);
 
         return fp;
+}
+
+static void
+freelist_cleanup(void)
+{
+        struct freelist *next = NULL;
+        struct freelist *fp = NULL;
+
+        for (fp = g_all; fp != NULL; fp = next) {
+                next = fp->f_next;
+                freelist_free_buckets(fp);
+                mutex_free_no_check(&fp->f_mut);
+                FREE_AND_NULL(&fp);
+        }
+}
+
+static void
+freelist_free_buckets(struct freelist *fp)
+{
+        struct freelink *next = NULL;
+        struct freelink *p = NULL;
+        size_t i = 0;
+
+        ASSERT(fp != NULL);
+
+        for (i = 0; i < FREELIST_BUCKET_COUNT; i++) {
+                for (p = fp->f_free[i]; p != NULL; p = next) {
+                        next = p->l_next;
+                        FREE_AND_NULL(&p);
+                }
+        }
 }
 
 void
 freelist_free(struct freelist **fpp)
 {
         struct freelist *fp = NULL;
-        struct freelink *next = NULL;
-        struct freelink *p = NULL;
-        size_t i = 0;
 
         ASSERT(fpp != NULL);
 
         fp = *fpp;
         ASSERT(fp != NULL);
 
-        errno = pthread_mutex_destroy(&fp->f_mut);
-        if (errno != 0)
-                die("freelist_free: pthread_mutex_destroy");
-
-        for (i = 0; i < FREELIST_BUCKET_COUNT; i++) {
-                for (p = fp->f_free[i]; p != NULL; p = next) {
-                        next = p->l_next;
-                        free(p);
-                }
-        }
-
-        free(fp);
-        *fpp = NULL;
+        freelist_free_buckets(fp);
+        mutex_free(&fp->f_mut);
+        FREE_AND_NULL(fpp);
 }
 
 void *
@@ -101,7 +135,7 @@ freelist_get(struct freelist *fp, size_t size)
         ASSERT(fp != NULL);
         ASSERT(size != 0);
 
-        freelist_lock(fp);
+        mutex_lock(&fp->f_mut);
 
         if (p != NULL) {
                 fp->f_free[bucket] = p->l_next;
@@ -115,28 +149,8 @@ freelist_get(struct freelist *fp, size_t size)
         fp->f_nbytes += sizeof(*p) + actual;
         p->l_size = actual;
 done:
-        freelist_unlock(fp);
+        mutex_unlock(&fp->f_mut);
         return (void *)(p + 1);
-}
-
-static void
-freelist_lock(struct freelist *fp)
-{
-        ASSERT(fp != NULL);
-
-        errno = pthread_mutex_lock(&fp->f_mut);
-        if (errno != 0)
-                die("freelist_lock: pthread_mutex_lock");
-}
-
-static void
-freelist_unlock(struct freelist *fp)
-{
-        ASSERT(fp != NULL);
-
-        errno = pthread_mutex_unlock(&fp->f_mut);
-        if (errno != 0)
-                die("freelist_unlock: pthread_mutex_unlock");
 }
 
 void
@@ -149,7 +163,7 @@ freelist_put(struct freelist *fp, void **pp)
         ASSERT(pp != NULL);
         ASSERT(*pp != NULL);
 
-        freelist_lock(fp);
+        mutex_lock(&fp->f_mut);
 
         if (fp->f_nbytes >= FREELIST_THRESHOLD) {
                 free(*pp);
@@ -160,6 +174,6 @@ freelist_put(struct freelist *fp, void **pp)
         p->l_next = fp->f_free[bucket];
         fp->f_free[bucket] = p;
 done:
-        freelist_unlock(fp);
+        mutex_unlock(&fp->f_mut);
         *pp = NULL;
 }

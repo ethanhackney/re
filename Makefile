@@ -1,4 +1,5 @@
-CFLAGS = -Wall  		\
+CFLAGS = -std=c11 		\
+	 -Wall  		\
 	-Werror                 \
 	-Wextra                 \
 	-Wconversion            \
