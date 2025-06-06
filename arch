@@ -1,5 +1,18 @@
 arch
 ====
+
+legend
+------
+main        => main thread
+re_compiler => regex compiler
+re_interp   => regex interpreter
+nfa         => nondeterministic finite automata
+freelist    => thread-safe free list
+stack       => stack
+mutex       => mutex
+intset      => integer set
+workgroup   => thread group
+
        +------+->[workgroup]------+----------+
        |      |                   |          |
        |      |                   V          V
