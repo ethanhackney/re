@@ -114,6 +114,7 @@ void
 freelist_free(struct freelist **fpp)
 {
         struct freelist *fp = NULL;
+        struct freelist **p = NULL;
 
         ASSERT(fpp != NULL);
 
@@ -122,6 +123,15 @@ freelist_free(struct freelist **fpp)
 
         freelist_free_buckets(fp);
         mutex_free(&fp->f_mut);
+
+        mutex_lock(&g_all_mut);
+        for (p = &g_all; *p != NULL; p = &(*p)->f_next) {
+                if (*p == fp)
+                        break;
+        }
+        *p = fp->f_next;
+        mutex_unlock(&g_all_mut);
+
         FREE_AND_NULL(fpp);
 }
 
