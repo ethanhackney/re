@@ -1,34 +1,36 @@
 #ifndef NFA_H
 #define NFA_H
 
-/* nfa types */
-enum {
-        NFA_CHAR,  /* regular character */
-        NFA_OR,    /* or nfa */
-        NFA_COUNT, /* type count */
-};
-
-/* nfa */
-struct nfa {
-        struct nfa *n_edges[2]; /* nfa edges */
-        int         n_type;     /* type */
-        int         n_c;        /* if NFA_CHAR, character */
-};
+/* nfa{} */
+struct nfa;
 
 /**
- * create a new nfa{}:
+ * create an epsilon nfa{}:
  *
  * args:
- *  @type: nfa type
+ *  none
  *
  * ret:
  *  @success: pointer to nfa{}
  *  @failure: die
  */
-struct nfa *nfa_new(int type);
+struct nfa *nfa_epsilon_new(void);
 
 /**
- * allocate new nfa:
+ * create a new character nfa{}:
+ *
+ * args:
+ *  @end: end nfa{}
+ *  @c:   character
+ *
+ * ret:
+ *  @success: pointer to nfa{}
+ *  @failure: die
+ */
+struct nfa *nfa_char_new(struct nfa *end, int c);
+
+/**
+ * free an nfa{}:
  *
  * args:
  *  @npp: pointer to pointer to nfa{}
@@ -38,42 +40,5 @@ struct nfa *nfa_new(int type);
  *  @failure: does not
  */
 void nfa_free(struct nfa **npp);
-
-/**
- * create a new char nfa{}:
- *
- * args:
- *  @c: character
- *
- * ret:
- *  @success: pointer to nfa{}
- *  @failure: die
- */
-struct nfa *nfa_char_new(int c);
-
-/**
- * create a new or nfa{}:
- *
- * args:
- *  @e1: first edge
- *  @e2: second edge
- *
- * ret:
- *  @success: pointer to nfa{}
- *  @failure: die
- */
-struct nfa *nfa_or_new(struct nfa *e1, struct nfa *e2);
-
-/**
- * dump nfa{}:
- *
- * args:
- *  @np:    pointer to nfa{}
- *  @space: amount to indent
- *
- * ret:
- *  nothing
- */
-void nfa_dump(struct nfa *np, int space);
 
 #endif /* #ifndef NFA_H */

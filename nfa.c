@@ -1,216 +1,70 @@
+#include "freelist.h"
 #include "nfa.h"
-#include "ptrlist.h"
 #include "util.h"
-#include <stdlib.h>
-#include <stdio.h>
+#include <stdatomic.h>
+
+/* nfa{} types */
+enum {
+        NFA_EPSILON, /* epsilon */
+        NFA_CHAR,    /* regular character */
+        NFA_COUNT,   /* type count */
+};
+
+/* nfa */
+struct nfa {
+        struct nfa *n_edge[2]; /* edges */
+        int         n_type;    /* nfa{} type */
+        int         n_c;       /* character if NFA_CHAR */
+};
+
+/* nfa{} freelist{} */
+static struct freelist *g_nfa_free;
 
 /**
- * do nfa{} free:
+ * create a new nfa{}:
  *
  * args:
- *  @np:   pointer to nfa{}
- *  @seen: seen nfa{} (prevents infinite loop)
+ *  @type: nfa{} type
  *
  * ret:
- *  nothing
+ *  @success: pointer to nfa{}
+ *  @failure: die
  */
-static void nfa_collect(struct nfa *np, struct ptrlist **seen);
+static struct nfa *nfa_new(int type);
 
-/**
- * do dump nfa{}:
- *
- * args:
- *  @np:    pointer to nfa{}
- *  @seen:  seen nfa{} (prevents infinite loop)
- *  @space: amount to indent
- *
- * ret:
- *  nothing
- */
-static void nfa_do_dump(struct nfa *np, struct ptrlist **seen, int space);
-
-/**
- * indent:
- *
- * args:
- *  @space: amount to indent
- *
- * ret:
- *  none
- */
-static void indent(int space);
-
-/**
- * dump a NFA_CHAR:
- *
- * args:
- *  @np:   pointer to nfa{}
- *  @space: amount of indent
- *
- * ret:
- *  nothing
- */
-static void nfa_char_dump(struct nfa *np, struct ptrlist **seen, int space);
-
-/**
- * dump a NFA_OR:
- *
- * args:
- *  @np:   pointer to nfa{}
- *  @space: amount of indent
- *
- * ret:
- *  nothing
- */
-static void nfa_or_dump(struct nfa *np, struct ptrlist **seen, int space);
-
-struct nfa *
+static struct nfa *
 nfa_new(int type)
 {
+        static atomic_flag init = ATOMIC_FLAG_INIT;
         struct nfa *np = NULL;
 
-        np = calloc(1, sizeof(*np));
-        if (!np) {
-                perror("nfa_new: calloc");
-                exit(1);
-        }
+        if (unlikely(!atomic_flag_test_and_set(&init)))
+                g_nfa_free = freelist_new();
 
+        np = freelist_get(g_nfa_free, sizeof(*np));
         np->n_type = type;
+        return np;
+}
+
+struct nfa *
+nfa_epsilon_new(void)
+{
+        return nfa_new(NFA_EPSILON);
+}
+
+struct nfa *
+nfa_char_new(struct nfa *end, int c)
+{
+        struct nfa *np = nfa_new(NFA_CHAR);
+
+        np->n_c = c;
+        np->n_edge[0] = end;
+
         return np;
 }
 
 void
 nfa_free(struct nfa **npp)
 {
-        struct ptrlist *seen = NULL;
-        struct nfa *np = NULL;
-
-        if (!*npp)
-                return;
-
-        nfa_collect(*npp, &seen);
-
-        ptrlist_for_each(seen, np, {
-                free(np);
-        });
-
-        ptrlist_free(&seen);
-}
-
-static void
-nfa_collect(struct nfa *np, struct ptrlist **seen)
-{
-        if (!np)
-                return;
-
-        if (ptrlist_has(*seen, np))
-                return;
-
-        ptrlist_add(seen, np);
-        nfa_collect(np->n_edges[0], seen);
-        nfa_collect(np->n_edges[1], seen);
-}
-
-struct nfa *
-nfa_char_new(int c)
-{
-        struct nfa *np = NULL;
-
-        np = nfa_new(NFA_CHAR);
-        np->n_c = c;
-
-        return np;
-}
-
-struct nfa *
-nfa_or_new(struct nfa *e1, struct nfa *e2)
-{
-        struct nfa *np = NULL;
-
-        np = nfa_new(NFA_OR);
-        np->n_edges[0] = e1;
-        np->n_edges[1] = e2;
-
-        return np;
-}
-
-void
-nfa_dump(struct nfa *np, int space)
-{
-        struct ptrlist *seen = NULL;
-
-        indent(space);
-        printf("{\n");
-
-        nfa_do_dump(np, &seen, space);
-
-        indent(space);
-        printf("}\n");
-
-        ptrlist_free(&seen);
-}
-
-void nfa_do_dump(struct nfa *np, struct ptrlist **seen, int space)
-{
-        static void (*dump[NFA_COUNT])(struct nfa *, struct ptrlist **, int) = {
-                [NFA_CHAR] = nfa_char_dump,
-                [NFA_OR]   = nfa_or_dump,
-        };
-
-        if (!np)
-                return;
-
-        if (ptrlist_has(*seen, np))
-                return;
-
-        ptrlist_add(seen, np);
-        dump[np->n_type](np, seen, space);
-}
-
-void
-indent(int space)
-{
-        while (--space >= 0)
-                putchar(' ');
-}
-
-static void
-nfa_char_dump(struct nfa *np, struct ptrlist **seen, int space)
-{
-        indent(space + 2);
-        printf("type: NFA_CHAR,\n");
-
-        indent(space + 2);
-        printf("c: '%c',\n", np->n_c);
-
-        indent(space + 2);
-        printf("e1: {\n");
-
-        nfa_do_dump(np->n_edges[0], seen, space + 4);
-
-        indent(space + 2);
-        printf("},\n");
-}
-
-static void
-nfa_or_dump(struct nfa *np, struct ptrlist **seen, int space)
-{
-        indent(space + 2);
-        printf("type: NFA_OR,\n");
-
-        indent(space + 2);
-        printf("e1: {\n");
-
-        nfa_do_dump(np->n_edges[0], seen, space + 4);
-
-        indent(space + 2);
-        printf("},\n");
-
-        indent(space + 2);
-        printf("e2: {\n");
-
-        nfa_do_dump(np->n_edges[1], seen, space + 4);
-
-        indent(space + 2);
-        printf("},\n");
+        freelist_put(g_nfa_free, (void **)npp);
 }

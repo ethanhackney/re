@@ -1,20 +1,19 @@
 #include "util.h"
 #include <stdarg.h>
-#include <string.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
 
 void
 die(const char *fmt, ...)
 {
-        va_list args;
-        int error = 0;
+        va_list va;
+        int error = errno;
 
-        error = errno;
-        va_start(args, fmt);
-        vfprintf(stderr, fmt, args);
-        va_end(args);
+        va_start(va, fmt);
+        vfprintf(stderr, fmt, va);
+        va_end(va);
         fprintf(stderr, ": %s\n", strerror(error));
-        exit(1);
+        exit(EXIT_FAILURE);
 }
