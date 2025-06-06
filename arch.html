@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>re arch</title>
+  </head>
+
+  <body>
+    <h2>re arch</h2>
+
+    <!-- TODO: Auto generate all this from source files -->
+
+    <div class="mermaid">
+      flowchart TD
+        subgraph Subsystems
+          A0[main]
+          A1[re_compiler]
+          A2[re_interp]
+          A3[nfa]
+          A4[stack]
+          A5[intset]
+          A6[workgroup]
+          A7[freelist]
+          A8[mutex]
+        end
+
+        A0 --> A1
+        A0 --> A2
+
+        A1 --> A6
+        A1 --> A3
+        A1 --> A5
+        A1 --> A4
+
+        A2 --> A6
+        A2 --> A3
+        A2 --> A5
+        A2 --> A4
+
+        A3 --> A7
+
+        A6 --> A7
+        A6 --> A8
+
+        A7 --> A8
+    </div>
+
+    <!-- import mermaidjs -->
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+      mermaid.initialize({
+        startOnLoad: true
+      });
+    </script>
+
+  </body>
+
+</html>
