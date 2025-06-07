@@ -20,14 +20,14 @@
           A4[buckets]
           A5[buckets]
           A6[buckets]
-          A7[bucketlist]
-          A8[bucketlist]
+          A7[freelink]
+          A8[freelink]
           A9[...]
-          A10[bucketlist]
-          A11[bucketlist]
+          A10[freelink]
+          A11[freelink]
           A12[...]
-          A13[bucketlist]
-          A14[bucketlist]
+          A13[freelink]
+          A14[freelink]
           A15[...]
           A16[alloc]
           A17[alloc]
@@ -38,6 +38,8 @@
           A22[alloc]
           A23[alloc]
           A24[...]
+          A25[freelink]
+          A26[nil]
         end
 
         A0  --> A1
@@ -47,9 +49,11 @@
         A23 --> A24
         A24 --> A22
 
-        A4 --> A7
-        A4 --> A8
-        A4 --> A9
+        A4  --> A7
+        A4  --> A8
+        A4  --> A9
+        A7  --> A25
+        A25 --> A26
 
         A1  --> A2
         A1  --> A5
