@@ -13,7 +13,8 @@ enum {
 
 /* freelist{} entry */
 struct freelink {
-        struct freelink *l_next; /* next on free list */
+        struct freelink *l_next; /* next on free list or alloc list */
+        struct freelink *l_prev; /* previous on alloc list */
         size_t           l_size; /* bytes allocated (must be power of 2) */
 };
 
@@ -21,6 +22,7 @@ struct freelink {
 struct freelist {
         struct freelist *f_next;                        /* next on list */
         struct freelink *f_free[FREELIST_BUCKET_COUNT]; /* free lists */
+        struct freelink  f_alloc;                       /* alloc list */
         mutex_t          f_mut;                         /* protect access */
         size_t           f_nbytes;                      /* bytes allocated */
 };
@@ -41,7 +43,7 @@ static mutex_t          g_all_mut = MUTEX_INIT; /* protext access to g_all */
 static void freelist_cleanup(void);
 
 /**
- * free freelist{} buckets:
+ * free allocated links of freelist{}:
  *
  * args:
  *  @fp: pointer to freelist{}
@@ -53,7 +55,7 @@ static void freelist_cleanup(void);
  * NOTE:
  *  must be called with fp->f_mut held
  */
-static void freelist_free_buckets(struct freelist *fp);
+static void freelist_free_alloc(struct freelist *fp);
 
 struct freelist *
 freelist_new(void)
@@ -70,6 +72,9 @@ freelist_new(void)
                 die("freelist_new: calloc");
 
         mutex_init(&fp->f_mut);
+        fp->f_alloc.l_prev = &fp->f_alloc;
+        fp->f_alloc.l_next = &fp->f_alloc;
+        fp->f_alloc.l_size = 0;
 
         mutex_lock(&g_all_mut);
         fp->f_next = g_all;
@@ -87,26 +92,23 @@ freelist_cleanup(void)
 
         for (fp = g_all; fp != NULL; fp = next) {
                 next = fp->f_next;
-                freelist_free_buckets(fp);
+                freelist_free_alloc(fp);
                 mutex_free_no_check(&fp->f_mut);
                 FREE_AND_NULL(&fp);
         }
 }
 
 static void
-freelist_free_buckets(struct freelist *fp)
+freelist_free_alloc(struct freelist *fp)
 {
         struct freelink *next = NULL;
         struct freelink *p = NULL;
-        size_t i = 0;
 
         ASSERT(fp != NULL);
 
-        for (i = 0; i < FREELIST_BUCKET_COUNT; i++) {
-                for (p = fp->f_free[i]; p != NULL; p = next) {
-                        next = p->l_next;
-                        FREE_AND_NULL(&p);
-                }
+        for (p = fp->f_alloc.l_next; p != &fp->f_alloc; p = next) {
+                next = p->l_next;
+                FREE_AND_NULL(&p);
         }
 }
 
@@ -121,7 +123,7 @@ freelist_free(struct freelist **fpp)
         fp = *fpp;
         ASSERT(fp != NULL);
 
-        freelist_free_buckets(fp);
+        freelist_free_alloc(fp);
         mutex_free(&fp->f_mut);
 
         mutex_lock(&g_all_mut);
@@ -157,6 +159,10 @@ freelist_get(struct freelist *fp, size_t size)
                 die("freelist_get: calloc");
 
         fp->f_nbytes += sizeof(*p) + actual;
+        p->l_next = fp->f_alloc.l_next;
+        p->l_prev = &fp->f_alloc;
+        fp->f_alloc.l_next->l_prev = p;
+        fp->f_alloc.l_next = p;
         p->l_size = actual;
 done:
         mutex_unlock(&fp->f_mut);
@@ -181,6 +187,9 @@ freelist_put(struct freelist *fp, void **pp)
         }
 
         bucket = log2_pow2(p->l_size);
+        p->l_next->l_prev = p->l_prev;
+        p->l_prev->l_next = p->l_next;
+        p->l_prev = NULL;
         p->l_next = fp->f_free[bucket];
         fp->f_free[bucket] = p;
 done:

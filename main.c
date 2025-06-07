@@ -15,8 +15,5 @@ main(void)
         start = nfa_char_new(end, 'e');
 
         printf("%c\n", nfa_char(start));
-
-        nfa_free(&end);
-        nfa_free(&start);
-        re_compiler_free(&rp);
+        (void)rp;
 }
