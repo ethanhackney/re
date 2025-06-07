@@ -42,4 +42,8 @@ intset_new(size_t size)
 void
 intset_free(struct intset **ipp)
 {
+        ASSERT(ipp != NULL);
+        ASSERT(*ipp != NULL);
+
+        freelist_put(g_intset_free, (void **)ipp);
 }
