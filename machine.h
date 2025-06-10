@@ -49,4 +49,17 @@ void machine_free(struct machine **mpp);
  */
 void machine_add_tran(struct machine *mp, int from, int to, int sym);
 
+/**
+ * set finishing state of machine{}:
+ *
+ * args:
+ *  @mp:    pointer to machine{}
+ *  @state: state
+ *
+ * ret:
+ *  @success: nothing
+ *  @failure: does not
+ */
+void machine_set_finish(struct machine *mp, int state);
+
 #endif /* #ifndef MACHINE_H */

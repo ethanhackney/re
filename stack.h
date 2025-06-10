@@ -1,6 +1,8 @@
 #ifndef STACK_H
 #define STACK_H
 
+#include <stddef.h>
+
 /* stack */
 struct stack;
 
@@ -49,9 +51,21 @@ void stack_push(struct stack *sp, const void *elem);
  *
  * ret:
  *  @success: element
- *  @failure: die
+ *  @failure: does not
  */
 void *stack_top(struct stack *sp);
+
+/**
+ * get length of stack{}:
+ *
+ * args:
+ *  @sp:   pointer to stack{}
+ *
+ * ret:
+ *  @success: length of stack
+ *  @failure: does not
+ */
+size_t stack_len(struct stack *sp);
 
 /**
  * pop from stack{}:

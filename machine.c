@@ -13,6 +13,7 @@ struct trans {
 struct machine {
         int          m_nstates; /* number of states */
         int          m_next;    /* next free transition */
+        int          m_finish;  /* finishing state */
         struct trans m_trans[]; /* transitions */
 };
 
@@ -60,4 +61,12 @@ machine_add_tran(struct machine *mp, int from, int to, int sym)
         tp->t_to = to;
         tp->t_sym = sym;
         mp->m_next++;
+}
+
+void
+machine_set_finish(struct machine *mp, int state)
+{
+        ASSERT(mp != NULL);
+
+        mp->m_finish = state;
 }

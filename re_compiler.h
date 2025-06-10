@@ -2,7 +2,7 @@
 #define RE_COMPILER_H
 
 #include <stddef.h>
-#include "nfa.h"
+#include "machine.h"
 
 /* regex compiler */
 struct re_compiler;
@@ -33,27 +33,15 @@ struct re_compiler *re_compiler_new(const char *re, size_t len);
 void re_compiler_free(struct re_compiler **rpp);
 
 /**
- * get number of states:
- *
- * args:
- *  @rp: pointer to re_compiler{}
- *
- * ret:
- *  @success: *rpp set to NULL
- *  @failure: does not
- */
-int re_compiler_nstates(struct re_compiler *rp);
-
-/**
  * compiler regex:
  *
  * args:
  *  @rp: pointer to re_compiler{}
  *
  * ret:
- *  @success: pointer to nfa{}
+ *  @success: pointer to machine{}
  *  @failure: die
  */
-struct nfa *re_compiler_comp(struct re_compiler *rp);
+struct machine *re_compiler_comp(struct re_compiler *rp);
 
 #endif /* #ifndef RE_COMPILER_H */

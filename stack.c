@@ -10,7 +10,8 @@ struct stack_elem {
 
 /* stack */
 struct stack {
-        struct stack_elem *s_top;
+        struct stack_elem *s_top; /* top of stack */
+        size_t             s_len; /* length of stack */
 };
 
 /* stack_elem{} freelist{} */
@@ -62,6 +63,7 @@ stack_push(struct stack *sp, const void *elem)
         ep->e_elem = elem;
         ep->e_next = sp->s_top;
         sp->s_top = ep;
+        sp->s_len++;
 }
 
 void *
@@ -85,8 +87,17 @@ stack_pop(struct stack *sp)
         top = sp->s_top;
         elem = top->e_elem;
         sp->s_top = top->e_next;
+        sp->s_len--;
 
         freelist_put(g_stack_elem_free, (void **)&top);
 
         return (void *)elem;
+}
+
+size_t
+stack_len(struct stack *sp)
+{
+        ASSERT(sp != NULL);
+
+        return sp->s_len;
 }

@@ -2,6 +2,7 @@
 #include "freelist.h"
 #include "util.h"
 #include "stack.h"
+#include "nfa.h"
 #include <string.h>
 
 /* regex compiler */
@@ -89,15 +90,50 @@ re_compiler_nstates(struct re_compiler *rp)
         return rp->rc_state;
 }
 
-struct nfa *
+struct machine *
 re_compiler_comp(struct re_compiler *rp)
 {
+        struct machine *mp = NULL;
         struct nfa *start = NULL;
         struct nfa *end = NULL;
+        struct nfa *np = NULL;
+        struct nfa *edge = NULL;
+        int from = 0;
+        int to = 0;
+        int sym = 0;
+        int nedges = 0;
+        int type = 0;
+        int i = 0;
 
         re_compiler_do_comp(rp, &start, &end);
 
-        return start;
+        mp = machine_new((int)stack_len(rp->rc_stk));
+
+        np = stack_top(rp->rc_stk);
+        machine_set_finish(mp, nfa_state(np));
+
+        while (stack_len(rp->rc_stk) > 0) {
+                np = stack_pop(rp->rc_stk);
+
+                nedges = 0;
+                if (np->n_edge[0] != NULL)
+                        nedges++;
+                if (np->n_edge[1] != NULL)
+                        nedges++;
+
+                from = np->n_state;
+                for (i = 0; i < nedges; i++) {
+                        edge = nfa_edge(np, i);
+                        to = nfa_state(edge);
+                        type = nfa_type(edge);
+                        sym = type == NFA_EPSILON ? -1 : np->n_c;
+
+                        machine_add_tran(mp, from, to, sym);
+                }
+        }
+
+        nfa_free(&start);
+        return mp;
 }
 
 static void
