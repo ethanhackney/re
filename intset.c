@@ -3,23 +3,6 @@
 #include "util.h"
 #include <stdint.h>
 
-/* type of intset{} elements */
-#if __SIZEOF_POINTER__ == 8
-typedef uint64_t intset_t;
-#elif __SIZEOF_POINTER__ == 4
-typedef uint32_t intset_t;
-#elif __SIZEOF_POINTER__ == 2
-typedef uint16_t intset_t;
-#else
-typedef uint8_t intset_t;
-#endif /* #if __SIZEOF_POINTER__ == 8) */
-
-/* intset{} */
-struct intset {
-        size_t   size;  /* size of set */
-        intset_t set[]; /* bitset */
-};
-
 /* intset{} freelist{} */
 static struct freelist *g_intset_free;
 
