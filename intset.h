@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include "util.h"
 
 /* type of intset{} elements */
 #if __SIZEOF_POINTER__ == 8
@@ -70,6 +71,8 @@ intset_add(struct intset *ip, int n)
         size_t idx = ((size_t)n) >> INTSET_LOG2;
         int bit = n & (INTSET_BITS_PER_WORD - 1);
 
+        ASSERT(ip != NULL);
+
         ip->i_set[idx] |= ((intset_t)1 << bit);
 }
 
@@ -89,6 +92,8 @@ intset_has(const struct intset *ip, int n)
 {
         size_t idx = ((size_t)n) >> INTSET_LOG2;
         int bit = n & (INTSET_BITS_PER_WORD - 1);
+
+        ASSERT(ip != NULL);
 
         return ip->i_set[idx] & ((intset_t)1 << bit);
 }

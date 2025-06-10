@@ -1,6 +1,7 @@
 #include "nfa.h"
 #include "re_compiler.h"
 #include <stdio.h>
+#include "ptrset.h"
 
 int
 main(void)

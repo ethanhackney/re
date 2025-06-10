@@ -13,6 +13,8 @@ intset_new(size_t size)
         struct intset *ip = NULL;
         size_t sz = 0;
 
+        ASSERT(size != 0);
+
         ONCE(&init, {
                 g_intset_free = freelist_new("intset", 6);
         });
