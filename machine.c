@@ -2,19 +2,19 @@
 
 /* transition */
 struct trans {
-        state_t t_from; /* source state */
-        state_t t_to;   /* destination state */
-        int     t_sym;  /* symbol (0 for epsilon) */
+        int t_from; /* source state */
+        int t_to;   /* destination state */
+        int t_sym;  /* symbol (-1 for epsilon) */
 };
 
 /* state machine */
 struct machine {
-        state_t      m_nstates; /* number of states */
+        int          m_nstates; /* number of states */
         struct trans m_trans[]; /* transitions */
 };
 
 struct machine *
-machine_new(state_t nstates)
+machine_new(int nstates)
 {
         return NULL;
 }

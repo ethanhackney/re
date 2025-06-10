@@ -2,7 +2,6 @@
 #define NFA_H
 
 #include "util.h"
-#include "state.h"
 
 /* nfa{} types */
 enum {
@@ -15,7 +14,7 @@ enum {
 /* nfa */
 struct nfa {
         struct nfa *n_edge[2]; /* private: edges */
-        state_t     n_state;   /* private: state */
+        int         n_state;   /* private: state */
         int         n_type;    /* private: nfa{} type */
         int         n_c;       /* private: character */
 };
@@ -31,7 +30,7 @@ struct nfa {
  *  @success: pointer to nfa{}
  *  @failure: die
  */
-struct nfa *nfa_new(state_t state, int type);
+struct nfa *nfa_new(int state, int type);
 
 /**
  * create an epsilon nfa{}:
@@ -44,7 +43,7 @@ struct nfa *nfa_new(state_t state, int type);
  *  @failure: die
  */
 static inline struct nfa *
-nfa_epsilon_new(state_t state)
+nfa_epsilon_new(int state)
 {
         return nfa_new(state, NFA_EPSILON);
 }
@@ -62,7 +61,7 @@ nfa_epsilon_new(state_t state)
  *  @failure: die
  */
 static inline struct nfa *
-nfa_char_new(state_t state, struct nfa *end, int c)
+nfa_char_new(int state, struct nfa *end, int c)
 {
         struct nfa *np = nfa_new(state, NFA_CHAR);
 
@@ -142,7 +141,7 @@ nfa_type(const struct nfa *np)
  *  @success: nfa{} state
  *  @failure: does not
  */
-static inline state_t
+static inline int
 nfa_state(const struct nfa *np)
 {
         ASSERT(np != NULL);

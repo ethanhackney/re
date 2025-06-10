@@ -1,13 +1,15 @@
 #include "re_compiler.h"
 #include "freelist.h"
 #include "util.h"
+#include "stack.h"
 #include <string.h>
 
 /* regex compiler */
 struct re_compiler {
-        const char *rc_p;     /* regex string pointer */
-        state_t     rc_state; /* next available state */
-        char        rc_re[];  /* regex string */
+        struct stack *rc_stk;   /* nfa stack */
+        const char   *rc_p;     /* regex string pointer */
+        int           rc_state; /* next available state */
+        char          rc_re[];  /* regex string */
 };
 
 /**
@@ -61,6 +63,7 @@ re_compiler_new(const char *re, size_t len)
         });
 
         rp = freelist_get(g_re_compiler_free, sz);
+        rp->rc_stk = stack_new();
         strncpy(rp->rc_re, re, len);
         rp->rc_re[len] = 0;
         rp->rc_p = rp->rc_re;
@@ -77,7 +80,7 @@ re_compiler_free(struct re_compiler **rpp)
         freelist_put(g_re_compiler_free, (void **)rpp);
 }
 
-state_t
+int
 re_compiler_nstates(struct re_compiler *rp)
 {
         ASSERT(rp != NULL);
@@ -114,6 +117,7 @@ re_compiler_do_comp(struct re_compiler *rp,
                 re_compiler_factor_comp(rp, &start2, &end2);
 
                 nfa_free(&end);
+                (void)stack_pop(rp->rc_stk);
                 rp->rc_state--;
 
                 cur->n_edge[0] = start2;
@@ -134,8 +138,10 @@ re_compiler_factor_comp(struct re_compiler *rp,
 
         end = nfa_epsilon_new(rp->rc_state);
         rp->rc_state++;
+        stack_push(rp->rc_stk, end);
 
         start = nfa_char_new(rp->rc_state, end, *rp->rc_p);
+        stack_push(rp->rc_stk, start);
         rp->rc_state++;
 
         rp->rc_p++;

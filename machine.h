@@ -22,7 +22,7 @@ struct machine;
  *  @success: pointer to machine{}
  *  @failure: die
  */
-struct machine *machine_new(state_t nstates);
+struct machine *machine_new(int nstates);
 
 /**
  * free machine{}:

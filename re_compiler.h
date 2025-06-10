@@ -3,7 +3,6 @@
 
 #include <stddef.h>
 #include "nfa.h"
-#include "state.h"
 
 /* regex compiler */
 struct re_compiler;
@@ -43,7 +42,7 @@ void re_compiler_free(struct re_compiler **rpp);
  *  @success: *rpp set to NULL
  *  @failure: does not
  */
-state_t re_compiler_nstates(struct re_compiler *rp);
+int re_compiler_nstates(struct re_compiler *rp);
 
 /**
  * compiler regex:

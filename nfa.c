@@ -56,7 +56,7 @@ static void indent(int amt);
 static struct freelist *g_nfa_free;
 
 struct nfa *
-nfa_new(state_t state, int type)
+nfa_new(int state, int type)
 {
         static _Atomic bool init = ATOMIC_FLAG_INIT;
         struct nfa *np = NULL;
