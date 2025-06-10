@@ -1,8 +1,6 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
-#include "nfa.h"
-
 /* misc. constants */
 enum {
         /* epsilon transition */
@@ -37,7 +35,7 @@ struct machine *machine_new(int nstates);
 void machine_free(struct machine **mpp);
 
 /**
- * add transition to machine{}
+ * add transition to machine{}:
  *
  * args:
  *  @mp:   pointer to machine{}
@@ -49,6 +47,6 @@ void machine_free(struct machine **mpp);
  *  @success: nothing
  *  @failure: does not
  */
-void machine_add_tran(struct machine **mpp, int from, int to, int sym);
+void machine_add_tran(struct machine *mp, int from, int to, int sym);
 
 #endif /* #ifndef MACHINE_H */

@@ -42,6 +42,18 @@ void stack_free(struct stack **spp);
 void stack_push(struct stack *sp, const void *elem);
 
 /**
+ * get top of stack{}:
+ *
+ * args:
+ *  @sp:   pointer to stack{}
+ *
+ * ret:
+ *  @success: element
+ *  @failure: die
+ */
+void *stack_top(struct stack *sp);
+
+/**
  * pop from stack{}:
  *
  * args:

@@ -57,6 +57,15 @@ stack_push(struct stack *sp, const void *elem)
 }
 
 void *
+stack_top(struct stack *sp)
+{
+        ASSERT(sp != NULL);
+        ASSERT(sp->s_top != NULL);
+
+        return (void *)sp->s_top->e_elem;
+}
+
+void *
 stack_pop(struct stack *sp)
 {
         struct stack_elem *top = NULL;
