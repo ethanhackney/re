@@ -24,22 +24,26 @@
           A8[mutex]
           A9[io]
           A10[ptrset]
+          A11[machine]
         end
 
         A0 --> A1
         A0 --> A2
         A0 --> A3
         A0 --> A6
+        A0 --> A11
 
         A1 --> A3
         A1 --> A7
+        A1 --> A11
+        A1 --> A4
 
         A2 --> A6
-        A2 --> A3
         A2 --> A5
         A2 --> A9
         A2 --> A4
         A2 --> A7
+        A2 --> A11
 
         A3 --> A7
         A3 --> A10
