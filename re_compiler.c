@@ -77,6 +77,7 @@ re_compiler_free(struct re_compiler **rpp)
         ASSERT(rpp != NULL);
         ASSERT(*rpp != NULL);
 
+        stack_free(&(*rpp)->rc_stk);
         freelist_put(g_re_compiler_free, (void **)rpp);
 }
 
