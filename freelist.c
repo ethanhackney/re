@@ -57,6 +57,21 @@ static void freelist_cleanup(void);
  */
 static void freelist_free_alloc(struct freelist *fp);
 
+/**
+ * free buckets of freelist{}:
+ *
+ * args:
+ *  @fp: pointer to freelist{}
+ *
+ * ret:
+ *  @success: nothing
+ *  @failure: does not
+ *
+ * NOTE:
+ *  must be called with fp->f_mut held
+ */
+static void freelist_free_buckets(struct freelist *fp);
+
 struct freelist *
 freelist_new(void)
 {
@@ -93,6 +108,7 @@ freelist_cleanup(void)
         for (fp = g_all; fp != NULL; fp = next) {
                 next = fp->f_next;
                 freelist_free_alloc(fp);
+                freelist_free_buckets(fp);
                 mutex_free_no_check(&fp->f_mut);
                 FREE_AND_NULL(&fp);
         }
@@ -108,7 +124,25 @@ freelist_free_alloc(struct freelist *fp)
 
         for (p = fp->f_alloc.l_next; p != &fp->f_alloc; p = next) {
                 next = p->l_next;
+                printf("LEAK: %p\n", (void *)p);
                 FREE_AND_NULL(&p);
+        }
+}
+
+static void
+freelist_free_buckets(struct freelist *fp)
+{
+        struct freelink *next = NULL;
+        struct freelink *p = NULL;
+        size_t i = 0;
+
+        ASSERT(fp != NULL);
+
+        for (i = 0; i < FREELIST_BUCKET_COUNT; i++) {
+                for (p = fp->f_free[i]; p != NULL; p = next) {
+                        next = p->l_next;
+                        FREE_AND_NULL(&p);
+                }
         }
 }
 
@@ -124,6 +158,7 @@ freelist_free(struct freelist **fpp)
         ASSERT(fp != NULL);
 
         freelist_free_alloc(fp);
+        freelist_free_buckets(fp);
         mutex_free(&fp->f_mut);
 
         mutex_lock(&g_all_mut);
