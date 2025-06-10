@@ -122,6 +122,7 @@ re_compiler_do_comp(struct re_compiler *rp,
                 rp->rc_state--;
 
                 cur->n_edge[0] = start2;
+                end = end2;
                 cur = start2;
         }
 

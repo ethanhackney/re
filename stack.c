@@ -36,8 +36,16 @@ stack_new(void)
 void
 stack_free(struct stack **spp)
 {
+        struct stack_elem *next = NULL;
+        struct stack_elem *p = NULL;
+
         ASSERT(spp != NULL);
         ASSERT(*spp != NULL);
+
+        for (p = (*spp)->s_top; p != NULL; p = next) {
+                next = p->e_next;
+                freelist_put(g_stack_elem_free, (void **)&p);
+        }
 
         freelist_put(g_stack_free, (void **)spp);
 }
