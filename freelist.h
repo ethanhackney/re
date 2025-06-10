@@ -10,13 +10,14 @@ struct freelist;
  * create a new freelist{}:
  *
  * args:
- *  none
+ *  @name: name of freelist{}
+ *  @len:  length of name
  *
  * ret:
  *  @success: pointer to freelist{}
  *  @failure: die
  */
-struct freelist *freelist_new(void);
+struct freelist *freelist_new(const char *name, size_t len);
 
 /**
  * free a freelist{}:

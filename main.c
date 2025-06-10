@@ -6,18 +6,13 @@ int
 main(void)
 {
         struct re_compiler *rp = NULL;
-        struct nfa *start = NULL;
-        struct nfa *end = NULL;
+        struct nfa *np = NULL;
 
-        rp = re_compiler_new("[a-z]+", 6);
+        rp = re_compiler_new("a", 6);
 
-        end = nfa_epsilon_new();
-        start = nfa_char_new(end, 'e');
+        np = re_compiler_comp(rp);
+        printf("%c\n", nfa_char(np));
 
-        printf("%c\n", nfa_char(start));
-
-        nfa_free(&start);
-        nfa_free(&end);
         re_compiler_free(&rp);
         (void)rp;
 }

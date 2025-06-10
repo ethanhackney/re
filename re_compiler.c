@@ -10,6 +10,38 @@ struct re_compiler {
         char        rc_re[];  /* regex string */
 };
 
+/**
+ * do compile:
+ *
+ * args:
+ *  @rp:      pointer to re_compiler{}
+ *  @startpp: pointer to pointer to start nfa{}
+ *  @endpp:   pointer to pointer to end nfa{}
+ *
+ * ret:
+ *  @success: nothing
+ *  @failure: die
+ */
+static void re_compiler_do_comp(struct re_compiler *rp,
+                                struct nfa **startpp,
+                                struct nfa **endpp);
+
+/**
+ * compile factor:
+ *
+ * args:
+ *  @rp:      pointer to re_compiler{}
+ *  @startpp: pointer to pointer to start nfa{}
+ *  @endpp:   pointer to pointer to end nfa{}
+ *
+ * ret:
+ *  @success: nothing 
+ *  @failure: die
+ */
+static void re_compiler_factor_comp(struct re_compiler *rp,
+                                    struct nfa **startpp,
+                                    struct nfa **endpp);
+
 /* re_compiler{} freelist{} */
 static struct freelist *g_re_compiler_free;
 
@@ -25,7 +57,7 @@ re_compiler_new(const char *re, size_t len)
         ASSERT(*re != 0);
 
         ONCE(&init, {
-                g_re_compiler_free = freelist_new();
+                g_re_compiler_free = freelist_new("re_compiler", 11);
         });
 
         rp = freelist_get(g_re_compiler_free, sz);
@@ -51,4 +83,38 @@ re_compiler_nstates(struct re_compiler *rp)
         ASSERT(rp != NULL);
 
         return rp->rc_state;
+}
+
+struct nfa *
+re_compiler_comp(struct re_compiler *rp)
+{
+        struct nfa *start = NULL;
+        struct nfa *end = NULL;
+
+        re_compiler_do_comp(rp, &start, &end);
+
+        return start;
+}
+
+static void
+re_compiler_do_comp(struct re_compiler *rp,
+                    struct nfa **startpp,
+                    struct nfa **endpp)
+{
+        re_compiler_factor_comp(rp, startpp, endpp);
+}
+
+static void
+re_compiler_factor_comp(struct re_compiler *rp,
+                        struct nfa **startpp,
+                        struct nfa **endpp)
+{
+        struct nfa *start = NULL;
+        struct nfa *end = NULL;
+
+        end = nfa_epsilon_new();
+        start = nfa_char_new(end, *rp->rc_p);
+        rp->rc_p++;
+        *startpp = start;
+        *endpp = end;
 }

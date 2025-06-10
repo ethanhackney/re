@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* misc. constants */
 enum {
@@ -25,6 +26,7 @@ struct freelist {
         struct freelink  f_alloc;                       /* alloc list */
         mutex_t          f_mut;                         /* protect access */
         size_t           f_nbytes;                      /* bytes allocated */
+        char             f_name[];                      /* freelist{} name */
 };
 
 static struct freelist *g_all;                  /* list of all freelist{} */
@@ -73,19 +75,27 @@ static void freelist_free_alloc(struct freelist *fp);
 static void freelist_free_buckets(struct freelist *fp);
 
 struct freelist *
-freelist_new(void)
+freelist_new(const char *name, size_t len)
 {
         static _Atomic bool init = ATOMIC_FLAG_INIT;
-        struct freelist *fp = calloc(1, sizeof(*fp));
+        struct freelist *fp = NULL;
+        size_t sz = sizeof(*fp) + (len + 1);
+
+        ASSERT(name != NULL);
+        ASSERT(len != 0);
+        ASSERT(*name != 0);
 
         ONCE(&init, {
                 if (atexit(freelist_cleanup) < 0)
                         die("freelist_new: atexit");
         });
 
+        fp = calloc(1, sz);
         if (fp == NULL)
                 die("freelist_new: calloc");
 
+        strncpy(fp->f_name, name, len);
+        fp->f_name[len] = 0;
         mutex_init(&fp->f_mut);
         fp->f_alloc.l_prev = &fp->f_alloc;
         fp->f_alloc.l_next = &fp->f_alloc;
@@ -124,7 +134,7 @@ freelist_free_alloc(struct freelist *fp)
 
         for (p = fp->f_alloc.l_next; p != &fp->f_alloc; p = next) {
                 next = p->l_next;
-                printf("LEAK: %p\n", (void *)p);
+                printf("LEAK: %s: %p\n", fp->f_name, (void *)p);
                 FREE_AND_NULL(&p);
         }
 }

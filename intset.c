@@ -14,7 +14,7 @@ intset_new(size_t size)
         size_t sz = 0;
 
         ONCE(&init, {
-                g_intset_free = freelist_new();
+                g_intset_free = freelist_new("intset", 6);
         });
 
         sz = sizeof(*ip) + (sizeof(intset_t) * size);

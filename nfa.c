@@ -16,7 +16,7 @@ nfa_new(int type)
         ASSERT(type < NFA_COUNT);
 
         ONCE(&init, {
-                g_nfa_free = freelist_new();
+                g_nfa_free = freelist_new("nfa", 3);
         });
 
         np = freelist_get(g_nfa_free, sizeof(*np));
