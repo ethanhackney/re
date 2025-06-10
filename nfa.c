@@ -5,6 +5,7 @@
 #include <stdatomic.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdint.h>
 
 /* misc. constants */
 enum {
@@ -55,7 +56,7 @@ static void indent(int amt);
 static struct freelist *g_nfa_free;
 
 struct nfa *
-nfa_new(int type)
+nfa_new(state_t state, int type)
 {
         static _Atomic bool init = ATOMIC_FLAG_INIT;
         struct nfa *np = NULL;
@@ -69,6 +70,7 @@ nfa_new(int type)
 
         np = freelist_get(g_nfa_free, sizeof(*np));
         np->n_type = type;
+        np->n_state = state;
 
         return np;
 }
@@ -144,16 +146,28 @@ nfa_do_dump(struct nfa *np, struct ptrset *pp, int space)
         printf("\"n_type\": \"%s\",\n", names[np->n_type]);
 
         indent(space);
-        printf("\"n_edge[0]\": {\n");
-        nfa_do_dump(np->n_edge[0], pp, space + 2);
-        indent(space);
-        printf("},\n");
+        printf("\"n_state\": \"%lu\",\n", (uint64_t)np->n_state);
 
-        indent(space);
-        printf("\"n_edge[1]\": {\n");
-        nfa_do_dump(np->n_edge[1], pp, space + 2);
-        indent(space);
-        printf("}\n");
+        switch (np->n_type) {
+        case NFA_CHAR:
+                indent(space);
+                printf("\"n_c\": \"%c\",\n", np->n_c);
+
+                indent(space);
+                printf("\"n_edge[0]\": {\n");
+                nfa_do_dump(np->n_edge[0], pp, space + 2);
+                indent(space);
+                printf("},\n");
+                break;
+
+        case NFA_EPSILON:
+                indent(space);
+                printf("\"n_edge[0]\": {\n");
+                nfa_do_dump(np->n_edge[0], pp, space + 2);
+                indent(space);
+                printf("},\n");
+                break;
+        }
 }
 
 static void

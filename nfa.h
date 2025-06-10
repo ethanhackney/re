@@ -2,6 +2,7 @@
 #define NFA_H
 
 #include "util.h"
+#include "state.h"
 
 /* nfa{} types */
 enum {
@@ -14,6 +15,7 @@ enum {
 /* nfa */
 struct nfa {
         struct nfa *n_edge[2]; /* private: edges */
+        state_t     n_state;   /* private: state */
         int         n_type;    /* private: nfa{} type */
         int         n_c;       /* private: character */
 };
@@ -22,45 +24,47 @@ struct nfa {
  * create a new nfa{}:
  *
  * args:
- *  @type: nfa{} type
+ *  @state: state
+ *  @type:  nfa{} type
  *
  * ret:
  *  @success: pointer to nfa{}
  *  @failure: die
  */
-struct nfa *nfa_new(int type);
+struct nfa *nfa_new(state_t state, int type);
 
 /**
  * create an epsilon nfa{}:
  *
  * args:
- *  none
+ *  @state: state
  *
  * ret:
  *  @success: pointer to nfa{}
  *  @failure: die
  */
 static inline struct nfa *
-nfa_epsilon_new(void)
+nfa_epsilon_new(state_t state)
 {
-        return nfa_new(NFA_EPSILON);
+        return nfa_new(state, NFA_EPSILON);
 }
 
 /**
  * create a new character nfa{}:
  *
  * args:
- *  @end: end nfa{}
- *  @c:   character
+ *  @state: state
+ *  @end:   end nfa{}
+ *  @c:     character
  *
  * ret:
  *  @success: pointer to nfa{}
  *  @failure: die
  */
 static inline struct nfa *
-nfa_char_new(struct nfa *end, int c)
+nfa_char_new(state_t state, struct nfa *end, int c)
 {
-        struct nfa *np = nfa_new(NFA_CHAR);
+        struct nfa *np = nfa_new(state, NFA_CHAR);
 
         np->n_c = c;
         np->n_edge[0] = end;
@@ -126,6 +130,24 @@ nfa_type(const struct nfa *np)
         ASSERT(np != NULL);
 
         return np->n_type;
+}
+
+/**
+ * get nfa{} state:
+ *
+ * args:
+ *  @np: pointer to nfa{}
+ *
+ * ret:
+ *  @success: nfa{} state
+ *  @failure: does not
+ */
+static inline state_t
+nfa_state(const struct nfa *np)
+{
+        ASSERT(np != NULL);
+
+        return np->n_state;
 }
 
 /**

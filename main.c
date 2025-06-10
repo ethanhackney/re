@@ -9,11 +9,9 @@ main(void)
         struct re_compiler *rp = NULL;
         struct nfa *np = NULL;
 
-        rp = re_compiler_new("a", 6);
+        rp = re_compiler_new("abc", 6);
 
         np = re_compiler_comp(rp);
-        printf("%c\n", nfa_char(np));
-        printf("%d\n", re_compiler_nstates(rp));
 
         nfa_dump(np);
         nfa_free(&np);

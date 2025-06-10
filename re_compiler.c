@@ -6,7 +6,7 @@
 /* regex compiler */
 struct re_compiler {
         const char *rc_p;     /* regex string pointer */
-        int         rc_state; /* next available state */
+        state_t     rc_state; /* next available state */
         char        rc_re[];  /* regex string */
 };
 
@@ -77,7 +77,7 @@ re_compiler_free(struct re_compiler **rpp)
         freelist_put(g_re_compiler_free, (void **)rpp);
 }
 
-int
+state_t
 re_compiler_nstates(struct re_compiler *rp)
 {
         ASSERT(rp != NULL);
@@ -101,7 +101,27 @@ re_compiler_do_comp(struct re_compiler *rp,
                     struct nfa **startpp,
                     struct nfa **endpp)
 {
-        re_compiler_factor_comp(rp, startpp, endpp);
+        struct nfa *start = NULL;
+        struct nfa *end = NULL;
+        struct nfa *start2 = NULL;
+        struct nfa *end2 = NULL;
+        struct nfa *cur = NULL;
+
+        re_compiler_factor_comp(rp, &start, &end);
+
+        cur = start;
+        while (*rp->rc_p != 0) {
+                re_compiler_factor_comp(rp, &start2, &end2);
+
+                nfa_free(&end);
+                rp->rc_state--;
+
+                cur->n_edge[0] = start2;
+                cur = start2;
+        }
+
+        *startpp = start;
+        *endpp = end;
 }
 
 static void
@@ -112,9 +132,12 @@ re_compiler_factor_comp(struct re_compiler *rp,
         struct nfa *start = NULL;
         struct nfa *end = NULL;
 
-        end = nfa_epsilon_new();
-        start = nfa_char_new(end, *rp->rc_p);
-        rp->rc_state += 2;
+        end = nfa_epsilon_new(rp->rc_state);
+        rp->rc_state++;
+
+        start = nfa_char_new(rp->rc_state, end, *rp->rc_p);
+        rp->rc_state++;
+
         rp->rc_p++;
         *startpp = start;
         *endpp = end;
