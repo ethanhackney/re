@@ -1,6 +1,7 @@
 #include "freelist.h"
 #include "ptrset.h"
 #include "util.h"
+#include <stdint.h>
 
 /* ptrset{} entry */
 struct ptr {
@@ -71,12 +72,12 @@ ptrset_free(struct ptrset **ppp)
         for (i = 0; seen < pp->ps_len; i++) {
                 for (p = pp->ps_tab[i]; p != NULL; p = next) {
                         next = p->p_next;
-                        FREE_AND_NULL(&p);
+                        freelist_put(g_ptr_free, (void **)&p);
                         seen++;
                 }
         }
 
-        FREE_AND_NULL(ppp);
+        freelist_put(g_ptrset_free, (void **)ppp);
 }
 
 void
@@ -106,11 +107,12 @@ ptrset_add(struct ptrset *pp, const void *ptr)
 static size_t
 ptrhash(const void *ptr)
 {
-        size_t *up = NULL;
         size_t uptr = (size_t)ptr;
+        uint8_t *up = NULL;
+        uint8_t *end = (uint8_t *)uptr + sizeof(size_t);
         size_t hash = 5381;
 
-        for (up = &uptr; up < &uptr + sizeof(size_t); up++)
+        for (up = (uint8_t *)&uptr; up < end; up++)
                 hash = ((hash << 5) + hash) + *up;
 
         return hash;

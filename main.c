@@ -14,6 +14,7 @@ main(void)
         np = re_compiler_comp(rp);
         printf("%c\n", nfa_char(np));
 
+        nfa_free(&np);
         re_compiler_free(&rp);
         (void)rp;
 }

@@ -76,7 +76,7 @@ nfa_char_new(struct nfa *end, int c)
  *
  * ret:
  *  @success: *npp set to NULL
- *  @failure: does not
+ *  @failure: die
  */
 void nfa_free(struct nfa **npp);
 
