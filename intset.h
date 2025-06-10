@@ -72,6 +72,7 @@ intset_add(struct intset *ip, int n)
         int bit = n & (INTSET_BITS_PER_WORD - 1);
 
         ASSERT(ip != NULL);
+        ASSERT(idx < ip->i_size);
 
         ip->i_set[idx] |= ((intset_t)1 << bit);
 }
@@ -94,6 +95,7 @@ intset_has(const struct intset *ip, int n)
         int bit = n & (INTSET_BITS_PER_WORD - 1);
 
         ASSERT(ip != NULL);
+        ASSERT(idx < ip->i_size);
 
         return ip->i_set[idx] & ((intset_t)1 << bit);
 }

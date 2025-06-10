@@ -20,8 +20,10 @@ intset_new(size_t size)
         });
 
         sz = sizeof(*ip) + (sizeof(intset_t) * size);
+        ip = freelist_get(g_intset_free, sz);
+        ip->i_size = size;
 
-        return freelist_get(g_intset_free, sz);
+        return ip;
 }
 
 void

@@ -21,6 +21,7 @@ nfa_new(int type)
 
         np = freelist_get(g_nfa_free, sizeof(*np));
         np->n_type = type;
+
         return np;
 }
 
