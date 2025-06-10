@@ -114,6 +114,7 @@ re_compiler_factor_comp(struct re_compiler *rp,
 
         end = nfa_epsilon_new();
         start = nfa_char_new(end, *rp->rc_p);
+        rp->rc_state += 2;
         rp->rc_p++;
         *startpp = start;
         *endpp = end;
