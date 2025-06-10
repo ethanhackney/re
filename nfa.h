@@ -81,6 +81,18 @@ nfa_char_new(struct nfa *end, int c)
 void nfa_free(struct nfa **npp);
 
 /**
+ * dump nfa{}:
+ *
+ * args:
+ *  @np: pointer to nfa{}
+ *
+ * ret:
+ *  @success: nothing
+ *  @failure: die
+ */
+void nfa_dump(struct nfa *np);
+
+/**
  * get nfa{} character:
  *
  * args:

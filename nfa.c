@@ -3,6 +3,8 @@
 #include "util.h"
 #include "ptrset.h"
 #include <stdatomic.h>
+#include <stdio.h>
+#include <errno.h>
 
 /* misc. constants */
 enum {
@@ -22,6 +24,32 @@ enum {
  *  @failure: die
  */
 static void nfa_do_free(struct nfa *np, struct ptrset *pp);
+
+/**
+ * do dump:
+ *
+ * args:
+ *  @np:    pointer to nfa{}
+ *  @pp:    pointer to ptrset{}
+ *  @space: amount to indent
+ *
+ * ret:
+ *  @success: nothing
+ *  @failure: die
+ */
+static void nfa_do_dump(struct nfa *np, struct ptrset *pp, int space);
+
+/**
+ * indent:
+ *
+ * args:
+ *  @amt: amount to indent
+ *
+ * ret:
+ *  @success: nothing
+ *  @failure: does not
+ */
+static void indent(int amt);
 
 /* nfa{} freelist{} */
 static struct freelist *g_nfa_free;
@@ -73,4 +101,66 @@ nfa_do_free(struct nfa *np, struct ptrset *pp)
         nfa_do_free(np->n_edge[0], pp);
         nfa_do_free(np->n_edge[1], pp);
         freelist_put(g_nfa_free, (void **)&np);
+}
+
+void
+nfa_dump(struct nfa *np)
+{
+        struct ptrset *pp = NULL;
+
+        ASSERT(np != NULL);
+
+        pp = ptrset_new(PTRSET_SIZE);
+
+        printf("{\n");
+        nfa_do_dump(np, pp, 2);
+        printf("}\n");
+
+        ptrset_free(&pp);
+}
+
+static void
+nfa_do_dump(struct nfa *np, struct ptrset *pp, int space)
+{
+        static const char *names[NFA_COUNT] = {
+                [NFA_EPSILON] = "NFA_EPSILON",
+                [NFA_CHAR]    = "NFA_CHAR",
+        };
+
+        if (np == NULL)
+                return;
+
+        if (ptrset_has(pp, np))
+                return;
+
+        ptrset_add(pp, np);
+
+        if (np->n_type < 0 || np->n_type >= NFA_COUNT) {
+                errno = EINVAL;
+                die("nfa_do_dump: bad nfa type: %d", np->n_type);
+        }
+
+        indent(space);
+        printf("\"n_type\": \"%s\",\n", names[np->n_type]);
+
+        indent(space);
+        printf("\"n_edge[0]\": {\n");
+        nfa_do_dump(np->n_edge[0], pp, space + 2);
+        indent(space);
+        printf("},\n");
+
+        indent(space);
+        printf("\"n_edge[1]\": {\n");
+        nfa_do_dump(np->n_edge[1], pp, space + 2);
+        indent(space);
+        printf("}\n");
+}
+
+static void
+indent(int amt)
+{
+        int n = 0;
+
+        for (n = 0; n < amt; n++)
+                putchar(' ');
 }

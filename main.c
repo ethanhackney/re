@@ -15,6 +15,7 @@ main(void)
         printf("%c\n", nfa_char(np));
         printf("%d\n", re_compiler_nstates(rp));
 
+        nfa_dump(np);
         nfa_free(&np);
         re_compiler_free(&rp);
         (void)rp;
